@@ -11,7 +11,7 @@
 module load conda/py3-latest
 source activate mdp_transition_sampling
 
-cd /home/$USER/capok
+cd /home/$USER/mdp_transition_sampling
 pip install -e .
 
 staskfarm hpc/task_transition_sampling.txt
