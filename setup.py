@@ -1,9 +1,9 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name='mdp_transition_sampling',
     version='0.0.1',
-    packages=['src'],
+    packages=find_packages('mdp_transition_sampling'),
     url='',
     license='',
     author='John Birkbeck',
