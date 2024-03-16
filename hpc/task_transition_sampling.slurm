@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --nodes=1
-#SBATCH --ntasks=14
+#SBATCH --ntasks=12
 #SBATCH -p batch
 #SBATCH --job-name=task_transition_sampling
 #SBATCH --time=60:00:00

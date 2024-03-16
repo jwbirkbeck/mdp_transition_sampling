@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --nodes=1
-#SBATCH --ntasks=14
+#SBATCH --ntasks=12
 #SBATCH -p batch
 #SBATCH --job-name=task_opt_min_agents_training
 #SBATCH --time=60:00:00
