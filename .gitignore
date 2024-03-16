@@ -218,3 +218,7 @@ fabric.properties
 *.pickle
 *.png
 *.tar.gz
+
+# HPC log files:
+*.out
+*.err
