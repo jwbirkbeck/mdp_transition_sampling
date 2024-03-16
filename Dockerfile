@@ -11,6 +11,6 @@ RUN apt-get update
 RUN apt-get install -y libosmesa6-dev libgl1-mesa-glx libglfw3 libglew-dev patchelf
 RUN usermod -a -G video root
 
-RUN pip install POT pandas matplotlib
+RUN pip install POT pandas matplotlib stable-baselines3
 
 

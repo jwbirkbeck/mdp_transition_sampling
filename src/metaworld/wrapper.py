@@ -1,3 +1,4 @@
+import gymnasium as gym
 import metaworld
 import mujoco
 import numpy as np
@@ -5,7 +6,7 @@ from random import choice
 from metaworld.envs import reward_utils
 
 
-class MetaWorldWrapper:
+class MetaWorldWrapper(gym.Env):
     def __init__(self, task_name, render_mode=None):
         self.task_name = task_name
         self.ml1 = metaworld.ML1(self.task_name)
@@ -24,6 +25,7 @@ class MetaWorldWrapper:
         self.prev_state = None
         self.reward = None
         self.done = None
+        self.truncated = None
         self.info = None
         self.max_path_length = self.env.max_path_length
         self.curr_path_length = 0
@@ -44,23 +46,25 @@ class MetaWorldWrapper:
         self.env._partially_observable = False
         self.reset()
 
-    def reset(self):
-        state, _ = self.env.reset()
+    def reset(self, seed=None):
+        state, info = self.env.reset()
         self.env._partially_observable = False
         self.curr_path_length = 0
         self.state = state
-        return self.state
+        self.info = info
+        return self.state, self.info
 
     def step(self, action):
-        state, reward, done, truncated, info = self.env.step(action)
+        state, reward, terminated, truncated, info = self.env.step(action)
         if self.negate_rewards:
             reward *= -1.0
         self.state = state
         self.reward = reward
-        self.done = done or truncated
+        self.done = terminated
+        self.truncated = truncated
         self.info = info
         self.curr_path_length = self.env.curr_path_length
-        return self.state, self.reward, self.done, self.info
+        return self.state, self.reward, self.truncated, self.done, self.info
 
     def get_observation(self):
         # A compatibility method for wider testing
