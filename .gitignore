@@ -222,3 +222,6 @@ fabric.properties
 # HPC log files:
 *.out
 *.err
+
+# Scratch scripts:
+scripts/scratch/
