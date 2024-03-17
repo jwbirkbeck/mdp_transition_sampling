@@ -137,7 +137,7 @@ class MDPDifferenceSampler:
         rewards = np.empty(shape=(n_transitions, 1))
         for ind in range(n_transitions):
             env.reset()
-            next_state, reward, done, info = env.get_manual_step(state=state, action=action)
+            next_state, reward, done, truncated, info = env.get_manual_step(state=state, action=action)
             next_states[ind] = next_state
             rewards[ind] = reward
         observation = np.hstack((next_states, rewards))

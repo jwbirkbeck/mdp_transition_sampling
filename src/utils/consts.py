@@ -12,6 +12,8 @@ Task pool selection process:
     the rewards are calculable from state space information alone.
     As an example, internal forces are too complex to set manually within MuJoCo, but may feature indirectly
     in certain tasks' rewards calculations.
+- 17 remaining after eliminating sweep-into-v2 due to a unique hang on calling reset(). This is due to the methods used 
+    to manually set the states during transition sampling causing a while loop to never be satisfied. 
 """
 
 task_pool = ['button-press-topdown-v2',
@@ -30,8 +32,8 @@ task_pool = ['button-press-topdown-v2',
              'push-back-v2',
              'reach-v2',
              'reach-wall-v2',
-             'soccer-v2',
-             'sweep-into-v2']
+             'soccer-v2']
+
 
 """
 All-task sub-space bounds process:
