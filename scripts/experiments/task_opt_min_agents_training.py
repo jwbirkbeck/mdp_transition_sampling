@@ -5,7 +5,7 @@ from src.utils.consts import task_pool
 from stable_baselines3 import SAC
 from stable_baselines3.common.logger import configure
 
-results_path = os.path.expanduser('~/mdp_transition_sampling/results/task_transition_sampling/')
+results_path = os.path.expanduser('~/mdp_transition_sampling/results/task_regret_ratios/')
 os.makedirs(results_path) if not os.path.isdir(results_path) else None
 
 # Filename and sole argument representing the index to be the base of comparison
