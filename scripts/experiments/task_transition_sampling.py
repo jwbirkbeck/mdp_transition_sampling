@@ -16,15 +16,9 @@ base_index = int(sys.argv[1])
 base_task = task_pool[base_index]
 reps = 10
 
-sampling_params = [{'n_states': 5, 'n_transitions': 1},
-                   {'n_states': 5, 'n_transitions': 5},
-                   {'n_states': 5, 'n_transitions': 10},
-                   {'n_states': 15, 'n_transitions': 1},
-                   {'n_states': 15, 'n_transitions': 5},
-                   {'n_states': 15, 'n_transitions': 10},
-                   {'n_states': 25, 'n_transitions': 1},
-                   {'n_states': 25, 'n_transitions': 5},
-                   {'n_states': 25, 'n_transitions': 10}]
+sampling_params = [{'n_states': 150, 'n_transitions': 1},
+                   {'n_states': 150, 'n_transitions': 5},
+                   {'n_states': 150, 'n_transitions': 10}]
 
 results = pd.DataFrame()
 for param_set in sampling_params:
@@ -49,7 +43,7 @@ for param_set in sampling_params:
                                    'n_transitions': param_set['n_transitions']})
             results = pd.concat((results, pd_row))
             # Save after every update for loss avoidance:
-            csv_name = "results_" + str(base_index) + ".csv"
+            csv_name = "results_large_" + str(base_index) + ".csv"
             results.to_csv(os.path.join(results_path, csv_name), index=False)
             env_a.new_task()
             env_b.new_task()
