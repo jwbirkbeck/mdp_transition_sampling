@@ -14,9 +14,8 @@ assert sys.argv[1].isdigit(), 'python file index argument must be integer value'
 base_index = int(sys.argv[1])
 
 # Temporary exclusion of tasks requiring additional reward calculation mechanisms:
-exp_task_pool = [task_pool[ind] for ind in range(len(task_pool)) if ind not in (4, 10, 11, 12, 16, 17)]
-this_task = exp_task_pool[base_index]
-n_episodes = 2000
+this_task = task_pool[base_index]
+n_episodes = 4000
 
 opt_env = MetaWorldWrapper(task_name=this_task)
 opt_agent_str = results_path + 'opt___' + this_task
