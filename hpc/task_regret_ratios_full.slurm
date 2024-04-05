@@ -8,8 +8,7 @@
 #SBATCH --error=task_regret_ratios_full.err
 #SBATCH --mail-type=ALL
 
-module load conda/py3-latest
-source activate mdp_transition_sampling
+source activate ~/venvs/mdp_transition_sampling/bin/activate
 
 cd /home/$USER/mdp_transition_sampling
 pip install -e .
