@@ -75,7 +75,7 @@ for _ in range(int(n_eps_total / n_eps_per_eval)):
         # Evaluate optimal agent in every environment:
         for comp_task in task_pool:
             opt_agent.environment.change_task(task_name=comp_task, task_number=task_num)
-            opt_rewards_eval, opt_returns_eval = min_agent.train_agent(train=False)
+            opt_rewards_eval, opt_returns_eval = opt_agent.train_agent(train=False)
             eval_pd_row = pd.DataFrame({'agent': ['opt_agent'],
                                         'train_episodes': [train_episodes_iter],
                                         'env_a': [base_task],
