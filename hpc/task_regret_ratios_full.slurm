@@ -8,7 +8,7 @@
 #SBATCH --error=task_regret_ratios_full.err
 #SBATCH --mail-type=ALL
 
-source activate ~/venvs/mdp_transition_sampling/bin/activate
+source ~/venvs/mdp_transition_sampling/bin/activate
 
 cd /home/$USER/mdp_transition_sampling
 pip install -e .
