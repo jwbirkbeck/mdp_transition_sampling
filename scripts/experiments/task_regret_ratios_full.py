@@ -84,5 +84,5 @@ for _ in range(int(n_eps_total / n_eps_per_eval)):
                                         'returns': [opt_returns_eval]})
             eval_results = pd.concat((eval_results, eval_pd_row))
 
-        eval_csv_name = 'eval_results_' + base_index + ".csv"
+        eval_csv_name = 'eval_results_' + str(base_index) + ".csv"
         eval_results.to_csv(results_path + eval_csv_name, index=False)
