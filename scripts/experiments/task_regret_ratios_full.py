@@ -54,8 +54,8 @@ for _ in range(int(n_eps_total / n_eps_per_eval)):
         tr_csv_name = 'train_results_' + str(base_index) + ".csv"
         train_results.to_csv(results_path + tr_csv_name, index=False)
 
-    opt_agent.save(os.path.join(results_path, 'opt_agent/'))
-    min_agent.save(os.path.join(results_path, 'min_agent/'))
+    opt_agent.save(os.path.join(results_path, 'opt_agent_' + base_task + '/'))
+    min_agent.save(os.path.join(results_path, 'min_agent_' + base_task + '/'))
 
     # Evaluate multiple times:
     for _ in range(n_eval_reps):
