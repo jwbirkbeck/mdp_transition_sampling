@@ -4,7 +4,8 @@ import mujoco
 import numpy as np
 from random import choice
 from metaworld.envs import reward_utils
-
+from scipy.spatial.transform import Rotation
+from copy import copy
 
 class MetaWorldWrapper(gym.Env):
     def __init__(self, task_name, render_mode=None):
@@ -16,8 +17,8 @@ class MetaWorldWrapper(gym.Env):
         self.env.set_task(self.task)
         self.env._partially_observable = False
 
-        self.observation_space = self.env.observation_space
-        self.action_space = self.env.action_space
+        self.observation_space = copy(self.env.observation_space)
+        self.action_space = copy(self.env.action_space)
 
         self.negate_rewards = False
 
@@ -31,9 +32,9 @@ class MetaWorldWrapper(gym.Env):
         self.curr_path_length = 0
         self.reward_bounds = (0, 10)  # As described in the meta-world paper
 
-    def change_task(self, task_info=None, task_number=None):
-        if task_info is not None:
-            self.task_name = task_info
+    def change_task(self, task_name=None, task_number=None):
+        if task_name is not None:
+            self.task_name = task_name
             self.ml1 = metaworld.ML1(self.task_name)
             self.env = self.ml1.train_classes[self.task_name](render_mode=self.render_mode)
 
@@ -60,11 +61,11 @@ class MetaWorldWrapper(gym.Env):
             reward *= -1.0
         self.state = state
         self.reward = reward
-        self.done = terminated
+        self.done = terminated # changing 'terminated' to the admittedly more vague 'done' for compatibility
         self.truncated = truncated
         self.info = info
         self.curr_path_length = self.env.curr_path_length
-        return self.state, self.reward, self.truncated, self.done, self.info
+        return self.state, self.reward, self.done, self.truncated, self.info
 
     def get_observation(self):
         # A compatibility method for wider testing
@@ -72,16 +73,6 @@ class MetaWorldWrapper(gym.Env):
 
     def render(self):
         self.env.render()
-
-    def new_task(self, env_name=None):
-        if env_name is None:
-            self.task = choice(self.ml1.train_tasks)
-        else:
-            self.ml1 = metaworld.ML1(env_name)
-            self.env = self.ml1.train_classes[env_name]()
-            self.task = choice(self.ml1.train_tasks)
-        self.env.set_task(self.task)
-        self.env._partially_observable = False
 
     def sample_reward_function(self, n_samples):
         reward_sample = np.random.uniform(low=self.reward_bounds[0], high=self.reward_bounds[1], size=n_samples)
@@ -93,352 +84,162 @@ class MetaWorldWrapper(gym.Env):
         return s_action, converged
 
     def get_manual_step(self, state, action):
-        self.set_internals_from_state(hand_xyz=state[0:3], obj_xyz=state[4:7], goal_xyz=state[36:39])
+        # self.set_internals_from_state(hand_xyz=state[0:3], obj_xyz=state[4:7], goal_xyz=state[36:39])
+        self.set_internals_from_state(state=state)
         next_state, reward, done, truncated, info = self.step(action=action)
-        # end_eff_xpos = next_state[0:3]
-        # obj1_xpos = next_state[4:7]
-        # goal_xpos = next_state[36:39]
-        # Rather than returning the full next state, we only need a subset of this info for manual reward calculation
         return next_state, reward, done, truncated, info
 
-    def set_internals_from_state(self, hand_xyz=None, obj_xyz=None, goal_xyz=None):
-        """
-        While every Metaworld task uses the same states and action space, they each have differing internal
-        methods for states-setting. This method stores all unique states-setting code for each task.
-        """
-        if self.task_name == 'button-press-topdown-v2' and goal_xyz is not None:
-            old_obj_init_pos = self.env.obj_init_pos
-            self.env.goal = goal_xyz
-            self.env.obj_init_pos = goal_xyz
-            self.env.model.body_pos[
-                mujoco.mj_name2id(self.env.model, mujoco.mjtObj.mjOBJ_BODY, "box")
-            ] = self.env.obj_init_pos
-            mujoco.mj_forward(self.env.model, self.env.data)
-            self.env._target_pos = self.env._get_site_pos("hole")
-            self.env._obj_to_target_init = abs(
-                self.env._target_pos[2] - self.env._get_site_pos("buttonStart")[2])
-            self.env._set_pos_site('goal', self.env._target_pos)
-            self.env.obj_init_pos  = old_obj_init_pos
+    def set_internals_from_state(self, state):
+        # Indices are constructed from Metaworld's internal code and paper's description of observation space:
+        hand_xyz = state[0:3]
+        gripper_open = state[3]
+        obj1_xyz = state[4:7]
+        obj1_qpos = state[7:11]
+        obj2_xyz = state[11:14]
+        obj2_qpos = state[14:18]
+        goal_xyz = state[36:39]
 
-        elif self.task_name == 'button-press-v2' and goal_xyz is not None:
-            # See reset model in sawyer_button_press_v2.py
-            old_obj_init_pos = self.env.obj_init_pos
-            self.env.goal = goal_xyz
-            self.env._target_pos = self.env.goal.copy()
-            goal_pos = goal_xyz
-            self.env.obj_init_pos = goal_pos
-            self.env.model.body_pos[
-                mujoco.mj_name2id(self.env.model, mujoco.mjtObj.mjOBJ_BODY, "box")
-            ] = self.env.obj_init_pos
-            self.env._set_obj_xyz(0)
+        if self.task_name in ['button-press-topdown-v2', 'button-press-v2', 'button-press-wall-v2']:
+            # set position of box
+            self.env.model.body('box').pos = goal_xyz
+            # set position of goal based on box
             self.env._target_pos = self.env._get_site_pos("hole")
-            self.env.obj_init_pos = old_obj_init_pos
-            self.env._obj_to_target_init = abs(
-                self.env._target_pos[1] - self.env._get_site_pos("buttonStart")[1])
-            self.env._set_pos_site('goal', self.env._target_pos)
-
-        elif self.task_name == 'button-press-wall-v2' and goal_xyz is not None:
-            old_obj_init_pos = self.env.obj_init_pos
-            self.env.goal = goal_xyz
-            self.env._target_pos = self.env.goal.copy()
-            goal_pos = goal_xyz
-            self.env.obj_init_pos = goal_pos
-            self.env.model.body_pos[
-                mujoco.mj_name2id(self.env.model, mujoco.mjtObj.mjOBJ_BODY, "box")
-            ] = self.env.obj_init_pos
-            self.env._set_obj_xyz(0)
-            self.env._target_pos = self.env._get_site_pos("hole")
-            self.env._obj_to_target_init = abs(
-                self.env._target_pos[1] - self.env._get_site_pos("buttonStart")[1])
-            self.env._set_pos_site('goal', self.env._target_pos)
-            self.env.obj_init_pos = old_obj_init_pos
-
-        elif self.task_name == 'coffee-button-v2' and obj_xyz is not None:
-            old_obj_init_pos = self.env.obj_init_pos
-            self.env.obj_init_pos = obj_xyz
-            self.env.model.body_pos[
-                mujoco.mj_name2id(self.env.model, mujoco.mjtObj.mjOBJ_BODY, "coffee_machine")
-            ] = self.env.obj_init_pos
-            pos_mug = self.env.obj_init_pos + np.array([0.0, -0.22, 0.0])
-            self.env._set_obj_xyz(pos_mug)
-            pos_button = self.env.obj_init_pos + np.array([0.0, -0.22, 0.3])
-            self.env._target_pos = pos_button + np.array([0.0, self.env.max_dist, 0.0])
             self.env.goal = self.env._target_pos
-            self.env._set_pos_site('goal', self.env._target_pos)
-            self.env.obj_init_pos = old_obj_init_pos
+            self.env._target_pos = self.env._get_site_pos("hole")
 
-        elif self.task_name == 'coffee-push-v2' and goal_xyz is not None and obj_xyz is not None:
-            old_obj_init_pos = self.env.obj_init_pos
-            self.env.obj_init_pos = obj_xyz
-            self.env._set_obj_xyz(obj_xyz)
+        elif self.task_name in ['coffee-button-v2']:
+            # set position of coffee machine and mug
+            self.env.model.body('coffee_machine').pos = goal_xyz + np.array([0.0, 0.22, 0.0])
+            pos_mug = goal_xyz
+            self.env._set_obj_xyz(pos_mug)
+            # set position of goal based on button position
+            pos_button = goal_xyz + np.array([0.0, 0.0, 0.3])
+            self.env._target_pos = pos_button + np.array([0.0, self.env.max_dist, 0.0])
+
+        elif self.task_name in ['coffee-push-v2']:
+            self.env._set_obj_xyz(obj1_xyz)
             pos_machine = goal_xyz + np.array([0.0, 0.22, 0.0])
-            self.env.model.body_pos[
-                mujoco.mj_name2id(self.env.model, mujoco.mjtObj.mjOBJ_BODY, "coffee_machine")
-            ] = pos_machine
+            self.env.model.body('coffee_machine').pos = pos_machine
             self.env._target_pos = goal_xyz
             self.env.goal = self.env._target_pos
             self.env._set_pos_site('goal', self.env._target_pos)
-            self.env.obj_init_pos = old_obj_init_pos
 
-        elif self.task_name == 'dial-turn-v2' and goal_xyz is not None:
-            old_obj_init_pos = self.env.obj_init_pos
-            self.env.goal = goal_xyz
-            self.env._target_pos = self.env.goal.copy()
-            self.env.prev_obs = self.env._get_curr_obs_combined_no_goal()
-            goal_pos = goal_xyz
-            self.env.obj_init_pos = goal_pos[:3]
-            final_pos = goal_pos.copy() + np.array([0, 0.03, 0.03])
-            self.env._target_pos = final_pos
-            self.env.model.body_pos[
-                mujoco.mj_name2id(self.env.model, mujoco.mjtObj.mjOBJ_BODY, "dial")
-            ] = self.env.obj_init_pos
+        elif self.task_name in ['dial-turn-v2']:
+            self.env.model.body('dial').pos = obj1_xyz
+            # forbid non-vertical rotations before finding the angle:
+            obj1_qpos[1:3] = 0.0
+            obj1_qpos = obj1_qpos / np.sqrt((obj1_qpos ** 2).sum())
+            # Test radian angles are equal:
+            ang = Rotation.from_quat(obj1_qpos).as_rotvec()[0]
+            ang = ang + 2 * np.pi if ang < 0 else ang
+            self.env.data.joint("knob_Joint_1").qpos = ang
             self.env.dial_push_position = self.env._get_pos_objects() + np.array([0.05, 0.02, 0.09])
-            self.env._set_pos_site('goal', self.env._target_pos)
-            self.env.obj_init_pos = old_obj_init_pos
-            mujoco.mj_forward(self.env.model, self.env.data)
-
-        elif self.task_name == 'door-close-v2' and obj_xyz is not None:
-            old_obj_init_pos = self.env.obj_init_pos
-            self.env.objHeight = self.env.data.geom("handle").xpos[2]
-            obj_pos = obj_xyz
-            self.env.obj_init_pos = obj_pos
-            goal_pos = obj_pos.copy() + np.array([0.2, -0.2, 0.0])
-            self.env._target_pos = goal_pos
-            self.env.model.body("door").pos = self.env.obj_init_pos
-            self.env.model.site("goal").pos = self.env._target_pos
-            # keep the door open after resetting initial positions
-            self.env._set_obj_xyz(-1.5708)
             self.env.goal = goal_xyz
+            self.env._target_pos = goal_xyz
             self.env._set_pos_site('goal', self.env._target_pos)
-            self.env.obj_init_pos = old_obj_init_pos
 
-        elif self.task_name == 'door-unlock-v2' and obj_xyz is not None:
-            old_obj_init_pos = self.env.obj_init_pos
-            self.env.model.body("door").pos = obj_xyz
-            self.env._set_obj_xyz(1.5708)
+        elif self.task_name in ['door-close-v2']:
+            self.env.objHeight = self.env.data.geom("handle").xpos[2]
+            goal_pos = obj1_xyz.copy() + np.array([0.2, -0.2, 0.0])
+            self.env._target_pos = goal_pos
+            self.env.model.body("door").pos = obj1_xyz
+            self.env.model.site("goal").pos = goal_pos
+            # set door ajar angle after enforcing vertical-only rotations:
+            obj1_qpos[1:3] = 0.0
+            ang = Rotation.from_quat(obj1_qpos).as_rotvec()[0]
+            self.env._set_obj_xyz(ang)
+
+        elif self.task_name in ['door-unlock-v2']:
+            self.env.model.body("door").pos = obj1_xyz
+            obj1_qpos[1:3] = 0.0
+            ang = Rotation.from_quat(obj1_qpos).as_rotvec()[0]
+            self.env._set_obj_xyz(ang)
             self.env.obj_init_pos = self.env.data.body("lock_link").xpos
             self.env._target_pos = self.env.obj_init_pos + np.array([0.1, -0.04, 0.0])
-            self.env.goal = goal_xyz
+            self.env.goal = self.env._target_pos
             self.env._set_pos_site('goal', self.env._target_pos)
-            self.env.obj_init_pos = old_obj_init_pos
 
-        elif self.task_name == 'drawer-close-v2' and obj_xyz is not None:
-            old_obj_init_pos = self.env.obj_init_pos
-            # Compute nightstand position
-            self.env.obj_init_pos = obj_xyz
-            # Set mujoco body to computed position
-            self.env.model.body_pos[
-                mujoco.mj_name2id(self.env.model, mujoco.mjtObj.mjOBJ_BODY, "drawer")
-            ] = self.env.obj_init_pos
-            # Set _target_pos to current drawer position (closed)
-            self.env._target_pos = self.env.obj_init_pos + np.array([0.0, -0.16, 0.09])
-            # Pull drawer out all the way and mark its starting position
-            self.env._set_obj_xyz(-self.env.maxDist)
-            self.env.obj_init_pos = self.env._get_pos_objects()
-            self.env._set_pos_site('goal', self.env._target_pos)
-            self.env.obj_init_pos = old_obj_init_pos
-
-        elif self.task_name == 'handle-press-side-v2' and obj_xyz is not None:
-            old_obj_init_pos = self.env.obj_init_pos
-            self.env.obj_init_pos = obj_xyz
-            self.env.model.body_pos[
-                mujoco.mj_name2id(self.env.model, mujoco.mjtObj.mjOBJ_BODY, "box")
-            ] = self.env.obj_init_pos
-            self.env._set_obj_xyz(-0.001)
+        elif self.task_name in ['handle-press-side-v2']:
+            self.env.model.body("box").pos = obj1_xyz
+            obj1_qpos[1:3] = 0.0
+            ang = Rotation.from_quat(obj1_qpos).as_rotvec()[0]
+            self.env._set_obj_xyz(ang)
             self.env._target_pos = self.env._get_site_pos("goalPress")
             self.env._handle_init_pos = self.env._get_pos_objects()
-            self.env._set_pos_site('goal', self.env._target_pos)
-            self.env.obj_init_pos = old_obj_init_pos
 
-        elif self.task_name == 'handle-press-v2' and obj_xyz is not None:
-            old_obj_init_pos = self.env.obj_init_pos
-            self.env.obj_init_pos = obj_xyz
-            self.env.model.body_pos[
-                mujoco.mj_name2id(self.env.model, mujoco.mjtObj.mjOBJ_BODY, "box")
-            ] = self.env.obj_init_pos
-            self.env._set_obj_xyz(-0.001)
+        elif self.task_name in ['handle-press-v2']:
+            self.env.model.body("box").pos = obj1_xyz
+            obj1_qpos[1:3] = 0.0
+            ang = Rotation.from_quat(obj1_qpos).as_rotvec()[0]
+            self.env._set_obj_xyz(ang)
             self.env._target_pos = self.env._get_site_pos("goalPress")
-            self.env.maxDist = np.abs(
-                self.env.data.site_xpos[
-                    mujoco.mj_name2id(self.env.model, mujoco.mjtObj.mjOBJ_SITE, "handleStart")
-                ][-1]
-                - self.env._target_pos[-1]
-            )
-            self.env.target_reward = 1000 * self.env.maxDist + 1000 * 2
             self.env._handle_init_pos = self.env._get_pos_objects()
-            self.env.goal = goal_xyz
-            self.env._set_pos_site('goal', self.env._target_pos)
-            self.env.obj_init_pos = old_obj_init_pos
+            self.env.maxDist = np.abs(self.env.data.site("handleStart").xpos - self.env._target_pos[-1])
 
-        elif self.task_name == 'peg-insert-side-v2' and goal_xyz is not None and obj_xyz is not None:
-            old_obj_init_pos = self.env.obj_init_pos
-            pos_peg, pos_box = obj_xyz, goal_xyz
-            self.env.obj_init_pos = pos_peg
+        elif self.task_name in ['peg-insert-side-v2']:
+            pos_peg, pos_box = obj1_xyz, goal_xyz
             self.env.peg_head_pos_init = self.env._get_site_pos("pegHead")
-            self.env._set_obj_xyz(self.env.obj_init_pos)
-            self.env.model.body_pos[
-                mujoco.mj_name2id(self.env.model, mujoco.mjtObj.mjOBJ_BODY, "box")
-            ] = pos_box
+            self.env._set_obj_xyz(pos_peg)
+            self.env.model.body("box").pos = pos_box
             self.env._target_pos = pos_box + np.array([0.03, 0.0, 0.13])
-            self.env.goal = goal_xyz
+            self.env.goal = self.env._target_pos
             self.env._set_pos_site('goal', self.env._target_pos)
-            self.env.obj_init_pos = old_obj_init_pos
 
-        elif self.task_name == 'plate-slide-back-side-v2' and goal_xyz is not None and obj_xyz is not None:
-            old_obj_init_pos = self.env.obj_init_pos
-            puck_offset = self.env.model.body_pos[
-                mujoco.mj_name2id(self.env.model, mujoco.mjtObj.mjOBJ_BODY, "puck_channel")
-            ]
-            self.env.goal = goal_xyz
-            self.env._target_pos = self.env.goal.copy()
-            self.env.obj_init_pos = goal_xyz
-            self.env.model.body_pos[
-                mujoco.mj_name2id(self.env.model, mujoco.mjtObj.mjOBJ_BODY, "puck_goal")
-            ] = self.env.obj_init_pos
-            self.env._set_obj_xyz((obj_xyz - puck_offset)[:2])
-            self.env._set_pos_site('goal', self.env._target_pos)
-            self.env.obj_init_pos = old_obj_init_pos
+        elif self.task_name in ['plate-slide-back-v2', 'plate-slide-v2']:
+            self.env._target_pos = goal_xyz
+            self.env.goal = self.env._target_pos
+            self.env.model.body("puck_channel").pos = obj1_xyz
+            self.env.model.body("puck_goal").pos = goal_xyz
+            self.env.model.site('goal').pos = goal_xyz
 
-        elif self.task_name == 'plate-slide-back-v2' and goal_xyz is not None and obj_xyz is not None:
-            old_obj_init_pos = self.env.obj_init_pos
-            puck_offset = self.env.model.body_pos[
-                mujoco.mj_name2id(self.env.model, mujoco.mjtObj.mjOBJ_BODY, "puck_channel")
-            ]
+        elif self.task_name in ['push-back-v2']:
+            self.env._target_pos = goal_xyz
+            self.env.model.site('goal').pos = goal_xyz
+            self.env._set_obj_xyz(obj1_xyz)
+
+        elif self.task_name in ['reach-v2', 'reach-wall-v2']:
             self.env.goal = goal_xyz
             self.env._target_pos = self.env.goal.copy()
-            self.env.obj_init_pos = goal_xyz
-            self.env.model.body_pos[
-                mujoco.mj_name2id(self.env.model, mujoco.mjtObj.mjOBJ_BODY, "puck_goal")
-            ] = self.env.obj_init_pos
-            self.env._set_obj_xyz((obj_xyz - puck_offset)[:2])
+            self.env._set_obj_xyz(obj1_xyz)
             self.env._set_pos_site('goal', self.env._target_pos)
-            self.env.obj_init_pos = old_obj_init_pos
 
-        elif self.task_name == 'plate-slide-side-v2' and goal_xyz is not None and obj_xyz is not None:
-            old_obj_init_pos = self.env.obj_init_pos
-            puck_offset = self.env.model.body_pos[
-                mujoco.mj_name2id(self.env.model, mujoco.mjtObj.mjOBJ_BODY, "puck_channel")
-            ]
+        elif self.task_name in ['soccer-v2']:
             self.env.goal = goal_xyz
-            self.env._target_pos = self.env.goal.copy()
-            self.env.obj_init_pos = goal_xyz
-            self.env.model.body_pos[
-                mujoco.mj_name2id(self.env.model, mujoco.mjtObj.mjOBJ_BODY, "puck_goal")
-            ] = self.env.obj_init_pos
-            self.env._set_obj_xyz((obj_xyz - puck_offset)[:2])
-            self.env._set_pos_site('goal', self.env._target_pos)
-            self.env.obj_init_pos = old_obj_init_pos
-
-        elif self.task_name == 'plate-slide-v2' and goal_xyz is not None and obj_xyz is not None:
-            old_obj_init_pos = self.env.obj_init_pos
-            puck_offset = self.env.model.body_pos[
-                mujoco.mj_name2id(self.env.model, mujoco.mjtObj.mjOBJ_BODY, "puck_channel")
-            ]
-            self.env.goal = goal_xyz
-            self.env._target_pos = self.env.goal.copy()
-            self.env.obj_init_pos = goal_xyz
-            self.env.model.body_pos[
-                mujoco.mj_name2id(self.env.model, mujoco.mjtObj.mjOBJ_BODY, "puck_goal")
-            ] = self.env.obj_init_pos
-            self.env._set_obj_xyz((obj_xyz - puck_offset)[:2])
-            self.env._set_pos_site('goal', self.env._target_pos)
-            self.env.obj_init_pos = old_obj_init_pos
-
-        elif self.task_name == 'push-back-v2' and goal_xyz is not None and obj_xyz is not None:
-            old_obj_init_pos = self.env.obj_init_pos
-            self.env.goal = goal_xyz
-            self.env._target_pos = self.env.goal.copy()
-            self.env.obj_init_pos = self.env.adjust_initObjPos(obj_xyz)
-            self.env.obj_init_angle = self.env.init_config["obj_init_angle"]
-            self.env._set_obj_xyz(self.env.obj_init_pos)
-            self.env._set_pos_site('goal', self.env._target_pos)
-            self.env.obj_init_pos = old_obj_init_pos
-
-        elif self.task_name == 'reach-v2' and goal_xyz is not None and obj_xyz is not None:
-            old_obj_init_pos = self.env.obj_init_pos
-            self.env.goal = goal_xyz
-            self.env._target_pos = self.env.goal.copy()
-            self.env.obj_init_pos = self.env.fix_extreme_obj_pos(obj_xyz)
-            self.env.obj_init_angle = self.env.init_config["obj_init_angle"]
-            self.env._set_obj_xyz(self.env.obj_init_pos)
-            self.env._set_pos_site('goal', self.env._target_pos)
-            self.env.obj_init_pos = old_obj_init_pos
-
-        elif self.task_name == 'reach-wall-v2' and goal_xyz is not None and obj_xyz is not None:
-            old_obj_init_pos = self.env.obj_init_pos
-            self.env.goal = goal_xyz
-            self.env._target_pos = self.env.goal.copy()
-            self.env.obj_init_pos = obj_xyz
-            self.obj_init_angle = self.env.init_config["obj_init_angle"]
-            self.env._set_obj_xyz(self.env.obj_init_pos)
-            self.env._set_pos_site('goal', self.env._target_pos)
-            self.env.obj_init_pos = old_obj_init_pos
-
-        elif self.task_name == 'soccer-v2' and goal_xyz is not None and obj_xyz is not None:
-            old_obj_init_pos = self.env.obj_init_pos
-            self.env.goal = goal_xyz
-            self.env._target_pos = self.env.goal.copy()
-            self.env.obj_init_angle = self.env.init_config["obj_init_angle"]
-            # goal_pos = self.env._get_state_rand_vec()
-            # self.env._target_pos = goal_pos[3:]
-            self.env.obj_init_pos = obj_xyz
-            self.env.model.body_pos[
-                mujoco.mj_name2id(self.env.model, mujoco.mjtObj.mjOBJ_BODY, "goal_whole")
-            ] = self.env._target_pos
-            self.env._set_obj_xyz(self.env.obj_init_pos)
-            self.env.maxPushDist = np.linalg.norm(
-                self.env.obj_init_pos[:2] - np.array(self.env._target_pos)[:2]
-            )
-            self.env._set_pos_site('goal', self.env._target_pos)
-            self.env.obj_init_pos = old_obj_init_pos
-
-        elif self.task_name == 'sweep-into-v2' and goal_xyz is not None and obj_xyz is not None:
-            old_obj_init_pos = self.env.obj_init_pos
-            self.env.goal = goal_xyz
-            self.env._target_pos = self.env.goal.copy()
-            self.env.obj_init_pos = obj_xyz
-            self.env.obj_init_angle = self.env.init_config["obj_init_angle"]
-            self.env.objHeight = obj_xyz[2]
-            # goal_pos = goal_xyz
-            # self.env.obj_init_pos = np.concatenate((goal_pos[:2], [self.env.obj_init_pos[-1]]))
-            self.env._set_obj_xyz(self.env.obj_init_pos)
-            self.env.maxPushDist = np.linalg.norm(
-                self.env.obj_init_pos[:2] - np.array(self.env._target_pos)[:2]
-            )
-            self.env._set_pos_site('goal', self.env._target_pos)
-            self.env.obj_init_pos = old_obj_init_pos
-
-        elif self.task_name == 'window-open-v2' and obj_xyz is not None:
-            old_obj_init_pos = self.env.obj_init_pos
-            self.env.prev_obs = self.env._get_curr_obs_combined_no_goal()
-            self.obj_init_pos = obj_xyz
-            self.env._target_pos = self.env.obj_init_pos + np.array([0.2, 0.0, 0.0])
-            self.env.model.body_pos[
-                mujoco.mj_name2id(self.env.model, mujoco.mjtObj.mjOBJ_BODY, "window")
-            ] = self.env.obj_init_pos
-            self.env.window_handle_pos_init = self.env._get_pos_objects()
-            self.env.data.joint("window_slide").qpos = 0.0
-            mujoco.mj_forward(self.env.model, self.env.data)
-            self.env._set_pos_site('goal', self.env._target_pos)
-            self.env.obj_init_pos = old_obj_init_pos
+            self.env._target_pos = goal_xyz
+            self.env.model.site('goal').pos = goal_xyz
+            self.env.model.body('goal_whole').pos = goal_xyz
+            self.env._set_obj_xyz(obj1_xyz)
+            self.env.maxPushDist = np.linalg.norm(self.env.obj_init_pos[:2] - np.array(self.env._target_pos)[:2])
 
         else:
             raise NotImplementedError('custom methods not defined for this task, or missing goal and object inputs')
 
-        if hand_xyz is not None:
-            old_hand_init_pos = self.env.hand_init_pos
-            old_init_tcp = self.env.init_tcp
-            self.env.hand_init_pos = hand_xyz
-            self.env._reset_hand()
-            self.env.hand_init_pos = old_hand_init_pos
-            self.env.init_tcp = old_init_tcp
+        old_hand_init_pos = self.env.hand_init_pos
+        old_init_tcp = self.env.init_tcp
+        self.env.hand_init_pos = hand_xyz
+        self.env._reset_hand()
+        self.env.hand_init_pos = old_hand_init_pos
+        self.env.init_tcp = old_init_tcp
+
+        finger_right, finger_left = (self.env.model.body("rightclaw"), self.env.model.body("leftclaw"))
+        curr_grip_dist = np.linalg.norm(finger_right.pos - finger_left.pos)
+        curr_grip_dist = np.clip(curr_grip_dist / 0.1, 1e-4, 1.0) # Small but non-zero to avoid issues
+        desired_grip_dist = np.clip(gripper_open, 1e-4, 1.0) # Small but non-zero to avoid issues
+
+        midpoint = (finger_right.pos + finger_left.pos) / 2
+        midpoint_to_right = finger_right.pos - midpoint
+        midpoint_to_left = finger_left.pos - midpoint
+        new_midpoint_to_right = midpoint_to_right * (desired_grip_dist / curr_grip_dist)
+        new_midpoint_to_left = midpoint_to_left * (desired_grip_dist / curr_grip_dist)
+        new_right = midpoint + new_midpoint_to_right
+        new_left = midpoint + new_midpoint_to_left
+
+        finger_right.pos = new_right
+        finger_left.pos = new_left
+
+        mujoco.mj_forward(self.env.model, self.env.data)
 
     def compute_reward_wrap(self, states, actions):
-        """
-        Each Metaworld task has a unique reward function, but their calculation relies on mujoco internal values. This
-        method replicates their calculations from the states and actions inputs. Small errors are possible - for instance,
-        the constant adjustment of np.array([0.0, 0.0, 0.045]) is only an estimate of a mildly (~1e-4) varying difference.
-        """
         rewards = []
         if self.task_name == 'button-press-topdown-v2':
             #         hand_low = (-0.5, 0.40, 0.05)
@@ -450,10 +251,9 @@ class MetaWorldWrapper(gym.Env):
                 # the tcp center is below the states provided to the agent. This is a constant approximate adjustment
                 # from the wrist joint to the COM of the fingers.
                 tcp = obs[0:3] - np.array([0.0, 0.0, 0.045])
-
                 tcp_to_obj = np.linalg.norm(obj - tcp)
                 tcp_to_obj_init = np.linalg.norm(obj - self.env.init_tcp)
-                obj_to_target = abs(self.env._target_pos[2] - obj[2])
+                obj_to_target = abs(obs[36:39][2] - obj[2])
 
                 tcp_closed = 1 - obs[3]
                 near_button = reward_utils.tolerance(
@@ -481,7 +281,7 @@ class MetaWorldWrapper(gym.Env):
 
                 tcp_to_obj = np.linalg.norm(obj - tcp)
                 tcp_to_obj_init = np.linalg.norm(obj - self.env.init_tcp)
-                obj_to_target = abs(self.env._target_pos[1] - obj[1])
+                obj_to_target = abs(obs[36:39][1] - obj[1])
 
                 tcp_closed = max(obs[3], 0.0)
                 near_button = reward_utils.tolerance(
@@ -509,7 +309,7 @@ class MetaWorldWrapper(gym.Env):
 
                 tcp_to_obj = np.linalg.norm(obj - tcp)
                 tcp_to_obj_init = np.linalg.norm(obj - self.env.init_tcp)
-                obj_to_target = abs(self.env._target_pos[1] - obj[1])
+                obj_to_target = abs(obs[36:39][1] - obj[1])
 
                 near_button = reward_utils.tolerance(
                     tcp_to_obj,
@@ -541,7 +341,7 @@ class MetaWorldWrapper(gym.Env):
 
                 tcp_to_obj = np.linalg.norm(obj - tcp)
                 tcp_to_obj_init = np.linalg.norm(obj - self.env.init_tcp)
-                obj_to_target = abs(self.env._target_pos[1] - obj[1])
+                obj_to_target = abs(obs[36:39][1] - obj[1])
 
                 tcp_closed = max(obs[3], 0.0)
                 near_button = reward_utils.tolerance(
@@ -565,7 +365,7 @@ class MetaWorldWrapper(gym.Env):
         elif self.task_name == 'coffee-push-v2':
             for obs, act in zip(states, actions):
                 obj = obs[4:7]
-                target = self.env._target_pos.copy()
+                target = obs[36:39].copy()
                 tcp = obs[0:3] - np.array([0.0, 0.0, 0.045])
 
                 # Emphasize X and Y errors
@@ -608,7 +408,7 @@ class MetaWorldWrapper(gym.Env):
                 obj = obs[4:7]
                 dial_push_position = obs[4:7] + np.array([0.05, 0.02, 0.09])
                 tcp = obs[0:3] - np.array([0.0, 0.0, 0.045])
-                target = self.env._target_pos.copy()
+                target = obs[36:39].copy()
 
                 target_to_obj = obj - target
                 target_to_obj = np.linalg.norm(target_to_obj)
@@ -641,7 +441,7 @@ class MetaWorldWrapper(gym.Env):
                 _TARGET_RADIUS = 0.05
                 tcp = obs[0:3] - np.array([0.0, 0.0, 0.045])
                 obj = obs[4:7]
-                target = self.env._target_pos
+                target = obs[36:39]
 
                 tcp_to_target = np.linalg.norm(tcp - target)
                 obj_to_target = np.linalg.norm(obj - target)
@@ -690,7 +490,7 @@ class MetaWorldWrapper(gym.Env):
                     sigmoid="long_tail",
                 )
 
-                obj_to_target = abs(self.env._target_pos[0] - lock[0])
+                obj_to_target = abs(obs[36:39][0] - lock[0])
                 pushed = reward_utils.tolerance(
                     obj_to_target,
                     bounds=(0, 0.005),
@@ -705,7 +505,7 @@ class MetaWorldWrapper(gym.Env):
             for obs, act in zip(states, actions):
                 obj = obs[4:7]
                 tcp = obs[0:3] - np.array([0.0, 0.0, 0.045])
-                target = self.env._target_pos.copy()
+                target = obs[36:39].copy()
 
                 target_to_obj = obj - target
                 target_to_obj = np.linalg.norm(target_to_obj)
@@ -744,7 +544,7 @@ class MetaWorldWrapper(gym.Env):
             for obs, act in zip(states, actions):
                 obj = obs[4:7]
                 tcp = obs[0:3] - np.array([0.0, 0.0, 0.045])
-                target = self.env._target_pos.copy()
+                target = obs[36:39].copy()
 
                 target_to_obj = obj[2] - target[2]
                 target_to_obj = np.linalg.norm(target_to_obj)
@@ -778,7 +578,7 @@ class MetaWorldWrapper(gym.Env):
             for obs, act in zip(states, actions):
                 obj = obs[4:7]
                 tcp = obs[0:3] - np.array([0.0, 0.0, 0.045])
-                target = self.env._target_pos.copy()
+                target = obs[36:39].copy()
 
                 target_to_obj = obj[2] - target[2]
                 target_to_obj = np.linalg.norm(target_to_obj)
@@ -816,7 +616,7 @@ class MetaWorldWrapper(gym.Env):
                 tcp = obs[0:3] - np.array([0.0, 0.0, 0.045])
                 obj_head = self.env._get_site_pos("pegHead")
                 tcp_opened = obs[3]
-                target = self.env._target_pos
+                target = obs[36:39]
                 tcp_to_obj = np.linalg.norm(obj - tcp)
                 scale = np.array([1.0, 2.0, 2.0])
                 #  force agent to pick up object then insert
@@ -889,7 +689,7 @@ class MetaWorldWrapper(gym.Env):
                 obj = obs[4:7]
                 tcp = obs[0:3] - np.array([0.0, 0.0, 0.045])
                 tcp_opened = obs[3]
-                target = self.env._target_pos
+                target = obs[36:39]
 
                 obj_to_target = np.linalg.norm(obj - target)
                 in_place_margin = np.linalg.norm(self.env.obj_init_pos - target)
@@ -925,7 +725,7 @@ class MetaWorldWrapper(gym.Env):
                 obj = obs[4:7]
                 tcp = obs[0:3] - np.array([0.0, 0.0, 0.045])
                 tcp_opened = obs[3]
-                target = self.env._target_pos
+                target = obs[36:39]
 
                 obj_to_target = np.linalg.norm(obj - target)
                 in_place_margin = np.linalg.norm(self.env.obj_init_pos - target)
@@ -961,7 +761,7 @@ class MetaWorldWrapper(gym.Env):
                 obj = obs[4:7]
                 tcp = obs[0:3] - np.array([0.0, 0.0, 0.045])
                 tcp_opened = obs[3]
-                target = self.env._target_pos
+                target = obs[36:39]
 
                 obj_to_target = np.linalg.norm(obj - target)
                 in_place_margin = np.linalg.norm(self.env.obj_init_pos - target)
@@ -1000,7 +800,7 @@ class MetaWorldWrapper(gym.Env):
                 obj = obs[4:7]
                 tcp = obs[0:3] - np.array([0.0, 0.0, 0.045])
                 tcp_opened = obs[3]
-                target = self.env._target_pos
+                target = obs[36:39]
 
                 obj_to_target = np.linalg.norm(obj - target)
                 in_place_margin = np.linalg.norm(self.env.obj_init_pos - target)
@@ -1038,8 +838,8 @@ class MetaWorldWrapper(gym.Env):
                 tcp = obs[0:3] - np.array([0.0, 0.0, 0.045])
                 tcp_opened = obs[3]
                 tcp_to_obj = np.linalg.norm(obj - tcp)
-                target_to_obj = np.linalg.norm(obj - self.env._target_pos)
-                target_to_obj_init = np.linalg.norm(self.env.obj_init_pos - self.env._target_pos)
+                target_to_obj = np.linalg.norm(obj - obs[36:39])
+                target_to_obj_init = np.linalg.norm(self.env.obj_init_pos - obs[36:39])
 
                 in_place = reward_utils.tolerance(
                     target_to_obj,
@@ -1069,7 +869,7 @@ class MetaWorldWrapper(gym.Env):
                 obj = obs[3:6]
                 # tcp_opened = obs[3]
                 # target = obs[6:9]
-                target = self.env._target_pos
+                target = obs[36:39]
 
                 tcp_to_target = np.linalg.norm(tcp - target)
                 # obj_to_target = np.linalg.norm(obj - target)
@@ -1087,7 +887,7 @@ class MetaWorldWrapper(gym.Env):
                 # obj = obs[4:7]
                 tcp = obs[0:3] - np.array([0.0, 0.0, 0.045])
                 # tcp_opened = obs[3]
-                target = self.env._target_pos
+                target = obs[36:39]
 
                 tcp_to_target = np.linalg.norm(tcp - target)
                 # obj_to_target = np.linalg.norm(obj - target)
@@ -1110,7 +910,7 @@ class MetaWorldWrapper(gym.Env):
                 tcp_opened = obs[3]
                 x_scaling = np.array([3.0, 1.0, 1.0])
                 tcp_to_obj = np.linalg.norm(obj - tcp)
-                target_to_obj = np.linalg.norm((obj - self.env._target_pos) * x_scaling)
+                target_to_obj = np.linalg.norm((obj - obs[36:39]) * x_scaling)
                 target_to_obj_init = np.linalg.norm((obj - self.env.obj_init_pos) * x_scaling)
 
                 in_place = reward_utils.tolerance(
@@ -1120,8 +920,8 @@ class MetaWorldWrapper(gym.Env):
                     sigmoid="long_tail",
                 )
 
-                goal_line = self.env._target_pos[1] - 0.1
-                if obj[1] > goal_line and abs(obj[0] - self.env._target_pos[0]) > 0.10:
+                goal_line = obs[36:39][1] - 0.1
+                if obj[1] > goal_line and abs(obj[0] - obs[36:39][0]) > 0.10:
                     in_place = np.clip(
                         in_place - 2 * ((obj[1] - goal_line) / (1 - goal_line)), 0.0, 1.0
                     )
@@ -1141,7 +941,7 @@ class MetaWorldWrapper(gym.Env):
                 obj = obs[4:7]
                 tcp = obs[0:3] - np.array([0.0, 0.0, 0.045])
                 tcp_opened = obs[3]
-                target = np.array([self.env._target_pos[0], self.env._target_pos[1], obj[2]])
+                target = np.array([obs[36:39][0], obs[36:39][1], obj[2]])
 
                 obj_to_target = np.linalg.norm(obj - target)
                 tcp_to_obj = np.linalg.norm(obj - tcp)
