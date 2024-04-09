@@ -6,17 +6,16 @@ from src.soft_actor_critic.sac_agent import SACAgent
 from src.dyna_like.SAC_dyna import SACDynaLike
 from src.metaworld.wrapper import MetaWorldWrapper
 
-# results_path = os.path.expanduser('~/mdp_transition_sampling/results/sac_dynalike/')
-results_path = '/opt/project/results/sac_dynalike/'
+results_path = os.path.expanduser('~/mdp_transition_sampling/results/sac_dynalike/')
+# results_path = '/opt/project/results/sac_dynalike/'
 prev_umask = os.umask(000)
 os.makedirs(results_path) if not os.path.isdir(results_path) else None
 os.umask(prev_umask)
 
 # Filename and sole argument representing the index to be the base of comparison
-# assert len(sys.argv) == 2
-# assert sys.argv[1].isdigit(), 'python file index argument must be integer value'
-# run_index = int(sys.argv[1])
-run_index = 0
+assert len(sys.argv) == 2
+assert sys.argv[1].isdigit(), 'python file index argument must be integer value'
+run_index = int(sys.argv[1])
 
 n_eps = 4000
 device = torch.device("cpu")
