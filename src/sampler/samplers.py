@@ -21,33 +21,6 @@ class MCCESampler:
         sigma = half_range * self.initial_sigma_coefficient
         return mu, sigma
 
-    # def sample_state(self, s_reward):
-    #     state_length = self.state_space.low.shape[0]
-    #     state_mu, state_sigma = self.get_init_params(bounds=self.state_space)
-    #     action_mu, action_sigma = self.get_init_params(bounds=self.action_space)
-    #     mu = np.append(state_mu, action_mu, axis=1)
-    #     sigma = np.append(state_sigma, action_sigma, axis=0)
-    #     converged = False
-    #     iterations = 0
-    #     while not converged and iterations <= self.max_iterations:
-    #         iterations += 1
-    #         samples = np.random.normal(loc=mu, scale=sigma, size=(self.mcce_sample_size, mu.shape[1]))
-    #         samples = np.clip(samples,
-    #                           a_min=np.append(self.state_space[0], self.action_space[0]),
-    #                           a_max=np.append(self.state_space[1], self.action_space[1]))
-    #         states = samples[:, :state_length]
-    #         actions = samples[:, state_length:]
-    #         reward_error = np.abs(np.subtract(s_reward, self.env_reward_function(states=states, actions=actions)))
-    #         elite_sample_inds = np.argpartition(-reward_error, -self.mcce_sample_size_elite)[-self.mcce_sample_size_elite:]
-    #         elite_sample = samples[elite_sample_inds, :]
-    #         mu = np.mean(elite_sample, axis=0, keepdims=True)
-    #         sigma = np.std(elite_sample, axis=0, keepdims=True) + 1e-6
-    #         if all(reward_error < self.mcce_min_diff):
-    #             converged = True
-    #     # TODO: separate state/action and return separately
-    #     final_state = np.random.normal(loc=mu, scale=sigma, size=(1, mu.shape[1]))
-    #     return final_state, converged
-
     def sample(self, s_reward):
         state_length = self.state_space.low.shape[0]
         state_mu, state_sigma = self.get_init_params(bounds=self.state_space)
@@ -72,7 +45,6 @@ class MCCESampler:
             sigma = np.std(elite_sample, axis=0, keepdims=True) + 1e-6
             if all(reward_error < self.mcce_min_diff):
                 converged = True
-        # TODO: separate state/action and return separately
         final_sample = np.random.normal(loc=mu, scale=sigma, size=(1, mu.shape[1]))
         final_state = final_sample[:, :state_length]
         final_action = final_sample[:, state_length:]
@@ -100,7 +72,7 @@ class MDPDifferenceSampler:
             obs_b = self.sample_transitions(mdp='b', state=state, action=action, n_transitions=n_transitions)
             observations_a[ind*n_transitions:(ind+1)*n_transitions, :] = obs_a
             observations_b[ind*n_transitions:(ind+1)*n_transitions, :] = obs_b
-        wasserstein_1 = self.get_wasserstein_1(samples_a=observations_a, samples_b=observations_b)
+        wasserstein_1 = self.get_wasserstein_1(samples_a=observations_a[[0]], samples_b=observations_b[[0]])
         return wasserstein_1
 
     def sample_rewards(self, n_samples):
