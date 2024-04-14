@@ -2,10 +2,10 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=20
 #SBATCH -p batch
-#SBATCH --job-name=cont_nonstat
+#SBATCH --job-name=cont_nonstat_w1_vs_returns
 #SBATCH --time=60:00:00
-#SBATCH --output=cont_nonstat.out
-#SBATCH --error=cont_nonstat.err
+#SBATCH --output=cont_nonstat_w1_vs_returns.out
+#SBATCH --error=cont_nonstat_w1_vs_returns.err
 #SBATCH --mail-type=ALL
 
 module load conda/py3-latest
