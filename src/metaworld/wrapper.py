@@ -20,6 +20,17 @@ class MetaWorldWrapper(gym.Env):
         self.observation_space = copy(self.env.observation_space)
         self.action_space = copy(self.env.action_space)
 
+        # Set -inf and inf bounds in state space to large but numeric values for sampling purposes.
+        self.observation_space.low[np.isinf(self.observation_space.low)] = -10.0
+        self.observation_space.high[np.isinf(self.observation_space.high)] = 10.0
+        # The default low and high goal bounds are both 0.0, causing clipping issues. Fix:
+        self.observation_space.low[36:39] = -10.0
+        self.observation_space.high[36:39] = 10.0
+
+
+
+        self.ns_dist = None
+
         self.negate_rewards = False
 
         self.state = None
@@ -56,15 +67,14 @@ class MetaWorldWrapper(gym.Env):
         return self.state, self.info
 
     def step(self, action):
-        state, reward, terminated, truncated, info = self.env.step(action)
+        if self.ns_dist is None:
+            state, reward, terminated, truncated, info = self.env.step(action)
+        else:
+            state, reward, terminated, truncated, info = self.ns_dist.step_with_ns(action=action, env=self.env)
         if self.negate_rewards:
             reward *= -1.0
-        self.state = state
-        self.reward = reward
-        self.done = terminated # changing 'terminated' to the admittedly more vague 'done' for compatibility
-        self.truncated = truncated
-        self.info = info
         self.curr_path_length = self.env.curr_path_length
+        self.state, self.reward, self.done, self.truncated, self.info = state, reward, terminated, truncated, info
         return self.state, self.reward, self.done, self.truncated, self.info
 
     def get_observation(self):
@@ -84,7 +94,6 @@ class MetaWorldWrapper(gym.Env):
         return s_action, converged
 
     def get_manual_step(self, state, action):
-        # self.set_internals_from_state(hand_xyz=state[0:3], obj_xyz=state[4:7], goal_xyz=state[36:39])
         self.set_internals_from_state(state=state)
         next_state, reward, done, truncated, info = self.step(action=action)
         return next_state, reward, done, truncated, info
@@ -255,7 +264,7 @@ class MetaWorldWrapper(gym.Env):
                 tcp_to_obj_init = np.linalg.norm(obj - self.env.init_tcp)
                 obj_to_target = abs(obs[36:39][2] - obj[2])
 
-                tcp_closed = 1 - obs[3]
+                tcp_closed = np.clip(1 - obs[3], a_min = 0.0, a_max=1.0)
                 near_button = reward_utils.tolerance(
                     tcp_to_obj,
                     bounds=(0, 0.01),

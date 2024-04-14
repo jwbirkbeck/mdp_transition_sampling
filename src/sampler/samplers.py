@@ -1,6 +1,5 @@
 import numpy as np
 import ot
-import torch
 
 
 class MCCESampler:
@@ -86,8 +85,6 @@ class MDPDifferenceSampler:
         states_converged = [None] * n_samples
         actions_converged = [None] * n_samples
         for ind in range(len(s_rewards)):
-            # state, state_converged = self.mcce_sampler.sample_state(s_reward=s_rewards[ind])
-            # action, action_converged = self.environment_a.sample_action(s_reward=s_rewards[ind])
             state, action, converged = self.mcce_sampler.sample(s_reward=s_rewards[ind])
             s_states[ind] = state
             s_actions[ind] = action
