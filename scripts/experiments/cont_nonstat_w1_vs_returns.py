@@ -25,7 +25,7 @@ run_index = int(sys.argv[1])
 
 device = torch.device("cpu")
 
-n_training_eps = 300
+n_training_eps = 750
 nonstat_sequence_length = 100_000
 low_inds = np.arange(0, nonstat_sequence_length / 10, nonstat_sequence_length / 100, dtype=int)
 med_inds = np.arange(nonstat_sequence_length / 10, nonstat_sequence_length/2, nonstat_sequence_length / 20, dtype=int)
@@ -34,6 +34,8 @@ high_inds = np.arange(nonstat_sequence_length / 2, nonstat_sequence_length+1, no
 nonstat_eval_inds = np.concatenate((low_inds, med_inds, high_inds))
 nonstat_eval_reps = 10
 
+train_results = pd.DataFrame()
+eval_results = pd.DataFrame()
 for task in task_selection:
     env = MetaWorldWrapper(task_name=task)
     env.change_task(task_name=task, task_number=0)  # zero variation between episodes to control all nonstationarity
@@ -41,14 +43,12 @@ for task in task_selection:
                      batch_size=500, memory_length=1e6, device=device, polyak=0.995)
 
     # Train agent in default task
-    train_results = pd.DataFrame()
     for train_rep in range(n_training_eps):
         ep_rew, ep_ret = agent.train_agent()
         pd_row = pd.DataFrame({'task': [task],
                                'episode': [train_rep],
                                'rewards': [ep_rew]})
         train_results = pd.concat((train_results, pd_row))
-
     train_results.to_csv(os.path.join(results_path, 'train_' + str(run_index) + '.csv'), index=False)
 
     ns_dist = MWNSDistribution(seed=0,
@@ -62,7 +62,6 @@ for task in task_selection:
 
     env.ns_dist = ns_dist
 
-    eval_results = pd.DataFrame()
     for rep in range(nonstat_eval_reps):
         for eval_ind in nonstat_eval_inds:
             env.ns_dist.set_sequence_ind(ind=eval_ind)
@@ -72,5 +71,4 @@ for task in task_selection:
                                    'test_ind': [eval_ind],
                                    'ep_reward': [ep_rew]})
             eval_results = pd.concat((eval_results, pd_row))
-
     eval_results.to_csv(os.path.join(results_path, 'eval_' + str(run_index) + '.csv'), index=False)
