@@ -60,10 +60,12 @@ for task in task_selection:
     ns_dist.generate_sequence(sequence_length=nonstat_sequence_length+1)
     ns_dist.freeze()
 
+    env.ns_dist = ns_dist
+
     eval_results = pd.DataFrame()
     for rep in range(nonstat_eval_reps):
         for eval_ind in nonstat_eval_inds:
-            ns_dist.set_sequence_ind(ind=eval_ind)
+            env.ns_dist.set_sequence_ind(ind=eval_ind)
             ep_rew, ep_ret = agent.train_agent(train=False)
             pd_row = pd.DataFrame({'task': [task],
                                    'rep': [rep],
