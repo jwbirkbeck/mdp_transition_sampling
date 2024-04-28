@@ -228,3 +228,6 @@ scripts/scratch/
 
 # Results:
 results/
+
+# PyCharm .idea files:
+.idea/*

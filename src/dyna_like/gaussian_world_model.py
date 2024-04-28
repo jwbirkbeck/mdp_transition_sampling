@@ -50,8 +50,8 @@ class GaussianWorldModel(torch.nn.Module):
         return prediction
 
     def train_step(self, state, action, next_state, reward, loss_func=torch.nn.L1Loss()):
-        # For a single state action pair, minimizing the L1Loss is equivalent to minimizing the W1 distance
-        # as for a single sample, the infinum is trivially eliminated
+        # For a single state action pair, minimizing the L1Loss is equivalent to minimizing the W1 distance as
+        # for a single sample, the infimum is trivially eliminated
         predictions = self.sample(state=state, action=action, training=True)
         actuals = torch.cat((next_state, reward), dim=1)
         self.optimiser.zero_grad(set_to_none=True)

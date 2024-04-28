@@ -4,7 +4,7 @@ SHELL ["/bin/bash", "-c"]
 ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libGLEW.so
 
 RUN pip install git+https://github.com/Farama-Foundation/Metaworld.git@master#egg=metaworld
-RUN pip install torch -i https://download.pytorch.org/whl/cpu
+RUN pip install torch
 
 # Required for rendering mujoco environments on the machine hosting the docker container:
 RUN apt-get update

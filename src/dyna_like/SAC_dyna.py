@@ -68,29 +68,28 @@ class SACDynaLike(SACAgent):
             self.wm_w1_low *= 2 - self.dist_decay
             self.wm_w1_high *= self.dist_decay
 
-            # Update accuracy bound trackers:
-            self.wm_w1_low = w1_dist if w1_dist < self.wm_w1_low else self.wm_w1_low
-            self.wm_w1_high = w1_dist if w1_dist > self.wm_w1_high else self.wm_w1_high
+            # # Update accuracy bound trackers:
+            # self.wm_w1_low = w1_dist if w1_dist < self.wm_w1_low else self.wm_w1_low
+            # self.wm_w1_high = w1_dist if w1_dist > self.wm_w1_high else self.wm_w1_high
+            self.wm_w1_low =  0.0
+            self.wm_w1_high = 0.5
 
-            numerator = (self.wm_w1_high - w1_dist)
+            numerator = max((self.wm_w1_high - w1_dist), 0.0)
             denominator = (self.wm_w1_high - self.wm_w1_low)
             denominator = float('nan') if denominator == 0 else denominator
             w1_dist_scaled = numerator / denominator
             w1_dist_scaled = 0 if isnan(w1_dist_scaled) else w1_dist_scaled
-            # TODO: consider random actions instead of the actions we actually took
-            # TODO: Read DYNA again - the above might be how it works to begin with!
-            # TODO: read how DYNA deals with predicting terminal states
             sim_batch_size = floor(self.batch_size * w1_dist_scaled)
             self.sim_updates  += sim_batch_size
             if sim_batch_size > 0:
                 sim_inds = torch.randint(high=self.batch_size, size=(sim_batch_size, ))
-                # sim_states, sim_actions = states[sim_inds, :], actions[sim_inds, :]
                 sim_states = states[sim_inds, :]
+                # sim_actions = actions[sim_inds, :]
                 sim_actions = torch.Tensor(np.array([self.environment.action_space.sample() for _ in sim_inds]))
                 new_wm_preds = self.worldmodel.sample(state=sim_states, action=sim_actions, training=False)
                 # sim_next_states, sim_rewards = new_wm_preds[sim_inds,:-1], new_wm_preds[sim_inds, -1].reshape(-1, 1)
                 sim_next_states, sim_rewards = new_wm_preds[:, :-1], new_wm_preds[:, -1].reshape(-1, 1)
-                sim_dones = dones[sim_inds, :]
+                sim_dones = torch.zeros(size=(sim_batch_size, 1))
 
                 all_states = torch.cat((states, sim_states), dim=0)
                 all_actions = torch.cat((actions, sim_actions), dim=0)
@@ -104,7 +103,7 @@ class SACDynaLike(SACAgent):
                 all_rewards = rewards
                 all_dones =dones
 
-            self.updates += 1
+            self.updates += self.batch_size
             # Critic update:
             with torch.no_grad():
                 next_actions, next_log_probs = self.actor.sample_normal(observation=all_next_states,

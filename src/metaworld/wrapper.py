@@ -427,7 +427,7 @@ class MetaWorldWrapper(gym.Env):
                 in_place = reward_utils.tolerance(
                     target_to_obj,
                     bounds=(0, self.env.TARGET_RADIUS),
-                    margin=abs(target_to_obj_init - self.env.TARGET_RADIUS),
+                    margin=max(abs(target_to_obj_init - self.env.TARGET_RADIUS), 0),
                     sigmoid="long_tail",
                 )
 
@@ -437,7 +437,7 @@ class MetaWorldWrapper(gym.Env):
                 reach = reward_utils.tolerance(
                     tcp_to_obj,
                     bounds=(0, dial_reach_radius),
-                    margin=abs(tcp_to_obj_init - dial_reach_radius),
+                    margin=max(abs(tcp_to_obj_init - dial_reach_radius), 0),
                     sigmoid="gaussian",
                 )
                 gripper_closed = min(max(0, act[-1]), 1)
@@ -459,7 +459,7 @@ class MetaWorldWrapper(gym.Env):
                 in_place = reward_utils.tolerance(
                     obj_to_target,
                     bounds=(0, _TARGET_RADIUS),
-                    margin=in_place_margin,
+                    margin=max(in_place_margin, 0),
                     sigmoid="gaussian",
                 )
 
@@ -467,7 +467,7 @@ class MetaWorldWrapper(gym.Env):
                 hand_in_place = reward_utils.tolerance(
                     tcp_to_target,
                     bounds=(0, 0.25 * _TARGET_RADIUS),
-                    margin=hand_margin,
+                    margin=max(hand_margin, 0),
                     sigmoid="gaussian",
                 )
 
@@ -495,7 +495,7 @@ class MetaWorldWrapper(gym.Env):
                 ready_to_push = reward_utils.tolerance(
                     np.linalg.norm(shoulder_to_lock),
                     bounds=(0, 0.02),
-                    margin=np.linalg.norm(shoulder_to_lock_init),
+                    margin=max(np.linalg.norm(shoulder_to_lock_init), 0),
                     sigmoid="long_tail",
                 )
 
@@ -503,7 +503,7 @@ class MetaWorldWrapper(gym.Env):
                 pushed = reward_utils.tolerance(
                     obj_to_target,
                     bounds=(0, 0.005),
-                    margin=self.env._lock_length,
+                    margin=max(self.env._lock_length, 0),
                     sigmoid="long_tail",
                 )
 
@@ -635,7 +635,7 @@ class MetaWorldWrapper(gym.Env):
                 in_place = reward_utils.tolerance(
                     obj_to_target,
                     bounds=(0, self.env.TARGET_RADIUS),
-                    margin=in_place_margin,
+                    margin=max(in_place_margin, 0),
                     sigmoid="long_tail",
                 )
                 ip_orig = in_place
@@ -705,7 +705,7 @@ class MetaWorldWrapper(gym.Env):
                 in_place = reward_utils.tolerance(
                     obj_to_target,
                     bounds=(0, _TARGET_RADIUS),
-                    margin=in_place_margin - _TARGET_RADIUS,
+                    margin=max(in_place_margin - _TARGET_RADIUS, 0),
                     sigmoid="long_tail",
                 )
 
@@ -714,7 +714,7 @@ class MetaWorldWrapper(gym.Env):
                 object_grasped = reward_utils.tolerance(
                     tcp_to_obj,
                     bounds=(0, _TARGET_RADIUS),
-                    margin=obj_grasped_margin - _TARGET_RADIUS,
+                    margin=max(obj_grasped_margin - _TARGET_RADIUS, 0),
                     sigmoid="long_tail",
                 )
 
@@ -741,7 +741,7 @@ class MetaWorldWrapper(gym.Env):
                 in_place = reward_utils.tolerance(
                     obj_to_target,
                     bounds=(0, _TARGET_RADIUS),
-                    margin=in_place_margin - _TARGET_RADIUS,
+                    margin=max(in_place_margin - _TARGET_RADIUS, 0),
                     sigmoid="long_tail",
                 )
 
@@ -750,7 +750,7 @@ class MetaWorldWrapper(gym.Env):
                 object_grasped = reward_utils.tolerance(
                     tcp_to_obj,
                     bounds=(0, _TARGET_RADIUS),
-                    margin=obj_grasped_margin - _TARGET_RADIUS,
+                    margin=max(obj_grasped_margin - _TARGET_RADIUS, 0),
                     sigmoid="long_tail",
                 )
 
@@ -777,7 +777,7 @@ class MetaWorldWrapper(gym.Env):
                 in_place = reward_utils.tolerance(
                     obj_to_target,
                     bounds=(0, _TARGET_RADIUS),
-                    margin=in_place_margin - _TARGET_RADIUS,
+                    margin=max(in_place_margin - _TARGET_RADIUS, 0),
                     sigmoid="long_tail",
                 )
 
@@ -786,7 +786,7 @@ class MetaWorldWrapper(gym.Env):
                 object_grasped = reward_utils.tolerance(
                     tcp_to_obj,
                     bounds=(0, _TARGET_RADIUS),
-                    margin=obj_grasped_margin - _TARGET_RADIUS,
+                    margin=max(obj_grasped_margin - _TARGET_RADIUS, 0),
                     sigmoid="long_tail",
                 )
 
@@ -817,7 +817,7 @@ class MetaWorldWrapper(gym.Env):
                 in_place = reward_utils.tolerance(
                     obj_to_target,
                     bounds=(0, _TARGET_RADIUS),
-                    margin=in_place_margin,
+                    margin=max(in_place_margin, 0),
                     sigmoid="long_tail",
                 )
 
@@ -827,7 +827,7 @@ class MetaWorldWrapper(gym.Env):
                 object_grasped = reward_utils.tolerance(
                     tcp_to_obj,
                     bounds=(0, _TARGET_RADIUS),
-                    margin=obj_grasped_margin,
+                    margin=max(obj_grasped_margin, 0),
                     sigmoid="long_tail",
                 )
 
@@ -853,7 +853,7 @@ class MetaWorldWrapper(gym.Env):
                 in_place = reward_utils.tolerance(
                     target_to_obj,
                     bounds=(0, self.env.TARGET_RADIUS),
-                    margin=target_to_obj_init,
+                    margin=max(target_to_obj_init, 0),
                     sigmoid="long_tail",
                 )
                 object_grasped = self.env._gripper_caging_reward(act, obj, self.env.OBJ_RADIUS)
@@ -885,7 +885,7 @@ class MetaWorldWrapper(gym.Env):
                 in_place_margin = (np.linalg.norm(np.array([0., 0.6, 0.2]) - target))
                 in_place = reward_utils.tolerance(tcp_to_target,
                                                   bounds=(0, _TARGET_RADIUS),
-                                                  margin=in_place_margin,
+                                                  margin=max(in_place_margin, 0),
                                                   sigmoid='long_tail', )
                 rewards.append(10.0 * in_place)
 
@@ -905,7 +905,7 @@ class MetaWorldWrapper(gym.Env):
                 in_place = reward_utils.tolerance(
                     tcp_to_target,
                     bounds=(0, _TARGET_RADIUS),
-                    margin=in_place_margin,
+                    margin=max(in_place_margin, 0),
                     sigmoid="long_tail",
                 )
                 reward = 10 * in_place
@@ -925,7 +925,7 @@ class MetaWorldWrapper(gym.Env):
                 in_place = reward_utils.tolerance(
                     target_to_obj,
                     bounds=(0, self.env.TARGET_RADIUS),
-                    margin=target_to_obj_init,
+                    margin=max(target_to_obj_init, 0),
                     sigmoid="long_tail",
                 )
 
@@ -959,7 +959,7 @@ class MetaWorldWrapper(gym.Env):
                 in_place = reward_utils.tolerance(
                     obj_to_target,
                     bounds=(0, _TARGET_RADIUS),
-                    margin=in_place_margin,
+                    margin=max(in_place_margin, 0),
                     sigmoid="long_tail",
                 )
 
