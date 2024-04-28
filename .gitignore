@@ -223,9 +223,6 @@ fabric.properties
 *.out
 *.err
 
-# Scratch scripts:
-scripts/scratch/
-
 # Results:
 results/
 
