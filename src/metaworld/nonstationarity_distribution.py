@@ -21,7 +21,7 @@ class MWNSDistribution:
     def step_with_ns(self, action, env):
         # Apply actuator to action transform, then step, then apply sensor transform to next_state
         processed_action = self.actuator_dist.apply_ns(raw_input=action)
-        state, reward, done, truncated, info = env.step(processed_action)
+        state, reward, done, truncated, info = env.env.step(processed_action)
         processed_state = self.sensor_dist.apply_ns(raw_input=state)
         self.task_dist.apply_ns(env=env)
         return processed_state, reward, done, truncated, info

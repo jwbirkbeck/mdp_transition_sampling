@@ -75,7 +75,7 @@ class MetaWorldWrapper(gym.Env):
         if self.ns_dist is None:
             state, reward, terminated, truncated, info = self.env.step(action)
         else:
-            state, reward, terminated, truncated, info = self.ns_dist.step_with_ns(action=action, env=self.env)
+            state, reward, terminated, truncated, info = self.ns_dist.step_with_ns(action=action, env=self)
         if self.negate_rewards:
             reward *= -1.0
         self.curr_path_length = self.env.curr_path_length
