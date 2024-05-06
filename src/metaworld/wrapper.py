@@ -1,9 +1,10 @@
 import gymnasium as gym
+from gymnasium.spaces import Box
 import metaworld
 import mujoco
 import numpy as np
 from random import choice
-from metaworld.envs import reward_utils
+from metaworld.envs.mujoco.utils import reward_utils
 from scipy.spatial.transform import Rotation
 from copy import copy
 
@@ -21,13 +22,11 @@ class MetaWorldWrapper(gym.Env):
         self.action_space = copy(self.env.action_space)
 
         # Set -inf and inf bounds in state space to large but numeric values for sampling purposes.
-        self.observation_space.low[np.isinf(self.observation_space.low)] = -10.0
-        self.observation_space.high[np.isinf(self.observation_space.high)] = 10.0
-        # The default low and high goal bounds are both 0.0, causing clipping issues. Fix:
-        self.observation_space.low[36:39] = -10.0
-        self.observation_space.high[36:39] = 10.0
-
-
+        low = self.observation_space.low
+        high = self.observation_space.high
+        low[np.isinf(low)] = -10.0
+        high[np.isinf(high)] = 10.0
+        self.observation_space = Box(low=low, high=high)
 
         self.ns_dist = None
 

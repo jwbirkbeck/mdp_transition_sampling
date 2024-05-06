@@ -1,5 +1,4 @@
 import numpy as np
-from gc import collect
 from src.utils.consts import task_pool as global_task_pool
 
 class MWNSDistribution:
@@ -12,11 +11,12 @@ class MWNSDistribution:
         self.maint_dist = MaintenanceNSDist(rng=np.random.default_rng(subseeds[2]))
         self.task_dist = TaskNSDist(rng=np.random.default_rng(subseeds[3]), current_task=current_task)
 
-    def generate_sequence(self, sequence_length):
+    def generate_sequence(self, sequence_length, append=False):
+        self.sequence_length = sequence_length
         self.maint_dist.generate_sequence(sequence_length=sequence_length)
         self.task_dist.generate_sequence(sequence_length=sequence_length)
-        self.sensor_dist.generate_sequence(sequence_length=sequence_length, maintenance=self.maint_dist.seq)
-        self.actuator_dist.generate_sequence(sequence_length=sequence_length, maintenance=self.maint_dist.seq)
+        self.sensor_dist.generate_sequence(sequence_length=sequence_length, maintenance=self.maint_dist.seq, append=append)
+        self.actuator_dist.generate_sequence(sequence_length=sequence_length, maintenance=self.maint_dist.seq, append=append)
 
     def step_with_ns(self, action, env):
         # Apply actuator to action transform, then step, then apply sensor transform to next_state
@@ -48,7 +48,6 @@ class MWNSDistribution:
         self.actuator_dist.seq_ind = 0
 
 
-
 class SensActNSDistribution:
     def __init__(self, rng, space):
         self.rng = rng
@@ -60,6 +59,7 @@ class SensActNSDistribution:
         self.set_failure_params()
         self.seq_ind = None
         self.bias_seq = None
+        self.bias_direction = None
         self.error_seq = None
         self.error_param_seq = None
         self.failure_seq = None
@@ -74,14 +74,25 @@ class SensActNSDistribution:
                                'p_min': total_p_failure * p_min}
 
     def set_degradation_params(self, bias_prob=1e-3, error_prob=1e-3, bias_max_delta=0.01, error_max_delta=0.01):
+        bias_prob /= self.dim
+        error_prob /= self.dim
         self.degrad_params = {'p_bias': bias_prob,
                               'p_error': error_prob,
                               'bias_max_delta': bias_max_delta,
                               'error_max_delta': error_max_delta}
 
-    def generate_sequence(self, sequence_length, maintenance):
+    def generate_sequence(self, sequence_length, maintenance, append=False):
+        if append:
+            last_bias = self.bias_seq[-1, :].reshape(1, -1)
+            last_error_params = self.error_param_seq[-1, :].reshape(1, -1)
+            last_failures = self.failure_seq[-1, :].reshape(1, -1)
+        else:
+            last_bias = np.zeros(shape=[1, self.dim])
+            last_error_params = np.zeros(shape=[1, self.dim])
+            last_failures = np.zeros(shape=[1, self.dim])
+
         if self.degrad_params['p_bias'] == 0.0:
-            biases = np.zeros(shape=[sequence_length, self.dim])
+            biases = np.repeat(last_bias, repeats=sequence_length)
         else:
             p_bias = [1 - self.degrad_params['p_bias'], self.degrad_params['p_bias']]
             biases = np.zeros(shape=[sequence_length, self.dim])
@@ -89,16 +100,22 @@ class SensActNSDistribution:
             for ind in list(np.where(maintenance == 1)[0]) + [sequence_length]:
                 split_length = ind - prev_ind
                 bias_events = self.rng.choice(a=np.array([0, 1]), size=[split_length, self.dim], p=p_bias)
-                bias_direction = self.rng.choice(a=np.array([-1, 1]), size=[1, self.dim], p=[0.5, 0.5])
+                if self.bias_direction is None:
+                    self.bias_direction = self.rng.choice(a=np.array([-1, 1]), size=[1, self.dim], p=[0.5, 0.5])
                 bias_magnitudes = self.rng.uniform(low=0, high=self.degrad_params['bias_max_delta'],
                                                    size=[split_length, self.dim])
-                biases[prev_ind:ind, :] = np.cumsum(bias_events * bias_direction * bias_magnitudes, axis=0)
+                if prev_ind != 0:
+                    biases[prev_ind:ind, :] = np.cumsum(bias_events * self.bias_direction * bias_magnitudes, axis=0)
+                else:
+                    appended_bias_calcs = np.append(last_bias, bias_events * self.bias_direction * bias_magnitudes, axis=0)
+                    patched_cumsum = np.cumsum(appended_bias_calcs, axis=0)
+                    patched_cumsum = patched_cumsum[1:, :]
+                    biases[prev_ind:ind, :] = patched_cumsum
                 prev_ind = ind
-            del bias_events, bias_direction, bias_magnitudes
-            collect()
+            del p_bias, prev_ind, split_length, appended_bias_calcs, patched_cumsum, bias_events, bias_magnitudes
 
         if self.degrad_params['p_error'] == 0.0:
-            error_params = np.zeros(shape=[sequence_length, self.dim])
+            error_params = np.repeat(last_error_params, repeats=sequence_length)
         else:
             p_error = [1 - self.degrad_params['p_error'], self.degrad_params['p_error']]
             error_params = np.zeros(shape=[sequence_length, self.dim])
@@ -108,29 +125,37 @@ class SensActNSDistribution:
                 error_events = self.rng.choice(a=np.array([0, 1]), size=[split_length, self.dim], p=p_error)
                 bias_magnitudes = self.rng.uniform(low=0, high=self.degrad_params['error_max_delta'],
                                                    size=[split_length, self.dim])
-                error_params[prev_ind:ind, :] = np.cumsum(error_events * bias_magnitudes, axis=0)
+                if prev_ind != 0:
+                    error_params[prev_ind:ind, :] = np.cumsum(error_events * bias_magnitudes, axis=0)
+                else:
+                    appended_error_calcs = np.append(last_error_params, error_events * bias_magnitudes, axis=0)
+                    patched_cumsum = np.cumsum(appended_error_calcs, axis=0)
+                    patched_cumsum = patched_cumsum[1:, :]
+                    error_params[prev_ind:ind, :] = patched_cumsum
                 prev_ind = ind
-            del error_events, bias_magnitudes
+            del p_error, prev_ind, split_length, appended_error_calcs, patched_cumsum, error_events, bias_magnitudes
             self.error_param_seq = error_params
             errors = self.rng.normal(loc=0, scale=self.error_param_seq)
-            collect()
 
         # Failure events:
         if sum(self.failure_params.values()) == 0.0:
-            failures = np.zeros(shape=[sequence_length, self.dim])
+            failures = np.repeat(last_failures, repeats=sequence_length)
         else:
             p_options = range(len(self.failure_params.keys()) + 1)
             p_failure = [1 - sum(self.failure_params.values())] + list(self.failure_params.values())
             failures = self.rng.choice(a=p_options, size=[sequence_length, self.dim], p=p_failure)
-
             prev_ind = 0
             for ind in list(np.where(maintenance == 1)[0]) + [int(sequence_length)]:
-                this_split = failures[prev_ind:ind, :]
+                if prev_ind == 0:
+                    this_split = np.append(last_failures, failures[prev_ind:ind, :], axis=0)
+                else:
+                    this_split = failures[prev_ind:ind, :]
                 first_failures = (this_split != 0).argmax(axis=0)
                 col_range = range(failures.shape[1])
                 for first_failure, col in zip(first_failures, col_range):
                     this_split[first_failure:, col] = this_split[first_failure, col]
                 prev_ind = ind
+        del p_options, p_failure, prev_ind, this_split, first_failures
 
         self.bias_seq = biases
         self.error_seq = errors
