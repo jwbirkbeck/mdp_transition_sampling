@@ -4,7 +4,13 @@ import metaworld
 import mujoco
 import numpy as np
 from random import choice
-from metaworld.envs.mujoco.utils import reward_utils
+try:
+    from metaworld.envs import reward_utils
+except ModuleNotFoundError:
+    try:
+        from metaworld.envs.mujoco.utils import reward_utils
+    except:
+        print("importing reward_utils both ways failed")
 from scipy.spatial.transform import Rotation
 from copy import copy
 
@@ -977,3 +983,4 @@ class MetaWorldWrapper(gym.Env):
             raise NotImplementedError('custom methods not defined for this task')
 
         return rewards
+
