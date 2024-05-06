@@ -252,7 +252,7 @@ class TaskNSDist:
     def apply_ns(self, env):
         if self.task_pool[self.seq[self.seq_ind]] != self.current_task:
             new_task_ind = self.seq[self.seq_ind]
-            new_task = self.task_pool(new_task_ind)
+            new_task = self.task_pool[new_task_ind]
             env.change_task(task_name=new_task)
         if not self.frozen:
             self.seq_ind += 1
