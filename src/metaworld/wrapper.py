@@ -6,7 +6,7 @@ import numpy as np
 from random import choice
 try:
     from metaworld.envs import reward_utils
-except ModuleNotFoundError:
+except ImportError:
     try:
         from metaworld.envs.mujoco.utils import reward_utils
     except:
