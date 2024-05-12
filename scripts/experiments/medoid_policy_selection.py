@@ -12,9 +12,6 @@ from src.utils.consts import task_pool_10
 results_dir = "~/mdp_transition_sampling/results/"
 # results_dir = "/opt/project/results/"
 results_path = os.path.join(results_dir, 'medoid_policy_selection/')
-prev_umask = os.umask(000)
-os.makedirs(results_path) if not os.path.isdir(results_path) else None
-os.umask(prev_umask)
 
 # Filename and sole argument representing the index to be the base of comparison
 assert len(sys.argv) == 2
@@ -28,7 +25,7 @@ p_task_change = 0.05
 env = MetaWorldWrapper(task_name=task_pool_10[0])
 
 # mapping_save_dir = '~/mdp_transition_sampling/src/policy_selector/'
-mapping_save_dir = '/opt/project/src/policy_selector/'
+mapping_save_dir = '~/mdp_transition_sampling/src/policy_selector/'
 with open(os.path.join(mapping_save_dir, 'mapping_3.pickle'), 'rb') as file:
     mapping_3 = pickle.load(file)
 with open(os.path.join(mapping_save_dir, 'mapping_6.pickle'), 'rb') as file:
