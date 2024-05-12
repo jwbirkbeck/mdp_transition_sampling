@@ -9,18 +9,17 @@ from src.soft_actor_critic.sac_agent import SACAgent
 from src.metaworld.wrapper import MetaWorldWrapper
 from src.utils.consts import task_pool_10
 
-# results_dir = "~/mdp_transition_sampling/results/"
-results_dir = "/opt/project/results/"
+results_dir = "~/mdp_transition_sampling/results/"
+# results_dir = "/opt/project/results/"
 results_path = os.path.join(results_dir, 'medoid_policy_selection/')
-# prev_umask = os.umask(000)
-# os.makedirs(results_path) if not os.path.isdir(results_path) else None
-# os.umask(prev_umask)
+prev_umask = os.umask(000)
+os.makedirs(results_path) if not os.path.isdir(results_path) else None
+os.umask(prev_umask)
 
 # Filename and sole argument representing the index to be the base of comparison
-# assert len(sys.argv) == 2
-# assert sys.argv[1].isdigit(), 'python file index argument must be integer value'
-# run_index = int(sys.argv[1])
-run_index = 0
+assert len(sys.argv) == 2
+assert sys.argv[1].isdigit(), 'python file index argument must be integer value'
+run_index = int(sys.argv[1])
 
 device = torch.device('cpu')
 n_episodes = 6000
@@ -54,8 +53,6 @@ for n_ep in range(n_episodes):
     if np.random.uniform() < p_task_change:
         new_task = np.random.choice(task_pool_10)
         env.change_task(task_name=new_task)
-    # probabalistically change task in same sequence for all four envs
-    # execute each of the four for an episode
     sac_ep_ret, _ = sac_agent.train_agent()
     ps3_ep_ret, _ = policy_selector_3.play_episode()
     ps6_ep_ret, _ = policy_selector_6.play_episode()
