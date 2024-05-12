@@ -24,8 +24,7 @@ p_task_change = 0.05
 
 env = MetaWorldWrapper(task_name=task_pool_10[0])
 
-# mapping_save_dir = '~/mdp_transition_sampling/src/policy_selector/'
-mapping_save_dir = '~/mdp_transition_sampling/src/policy_selector/'
+mapping_save_dir = '/home/jwgb1n21/mdp_transition_sampling/src/policy_selector/'
 with open(os.path.join(mapping_save_dir, 'mapping_3.pickle'), 'rb') as file:
     mapping_3 = pickle.load(file)
 with open(os.path.join(mapping_save_dir, 'mapping_6.pickle'), 'rb') as file:
