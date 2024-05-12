@@ -2,7 +2,7 @@ import torch
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from src.policy_selector.policy_selector import PolicySelector
+from src.policy_selector.worldmodel_policy_selector import WorldModelPolicySelector
 from src.metaworld.wrapper import MetaWorldWrapper
 from src.soft_actor_critic.sac_agent import SACAgent
 
@@ -31,7 +31,7 @@ print("done")
 plt.plot(sac_rewards)
 plt.show()
 
-policy_selector = PolicySelector(env=env, n_policies=len(task_selection),device=device)
+policy_selector = WorldModelPolicySelector(env=env, n_policies=len(task_selection), device=device)
 rewards = None
 active_inds = None
 w1_dists = None

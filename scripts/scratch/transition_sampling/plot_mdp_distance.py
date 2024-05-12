@@ -9,8 +9,7 @@ results = pd.DataFrame()
 for filename in all_filenames:
     tmp = pd.read_csv(filename)
     results = pd.concat((results, tmp))
-
-results.reset_index
+results.reset_index()
 
 query1 = 'n_states==5 and n_transitions==1'
 query2 = 'n_states==15 and n_transitions==1'
@@ -22,8 +21,8 @@ query7 = 'n_states==5 and n_transitions==10'
 query8 = 'n_states==15 and n_transitions==10'
 query9 = 'n_states==25 and n_transitions==10'
 
-# exp_task_pool = [task_pool[i] for i in range(len(task_pool)) if i not in [12, 16]]
-# trained_agents_pool = [exp_task_pool[i] for i in range(len(exp_task_pool)) if i in [6, 7, 8, 9, 10, 11, 13, 14]]
+exp_task_pool = [task_pool[i] for i in range(len(task_pool)) if i not in [12, 16]]
+trained_agents_pool = [exp_task_pool[i] for i in range(len(exp_task_pool)) if i in [6, 7, 8, 9, 10, 11, 13, 14]]
 
 task_selection = ['handle-press-side-v2', 'handle-press-v2', 'plate-slide-back-v2', 'reach-v2', 'reach-wall-v2']
 # trained_agents_pool = task_pool
@@ -48,4 +47,3 @@ for base_ind in range(len(trained_agents_pool)):
         plt.tight_layout()
         # plt.savefig('transition_sampling_' + base_env + '_25_10.png')
         plt.show()
-

@@ -4,7 +4,7 @@ from src.policy_selector.sac_policy import SACPolicy
 from src.soft_actor_critic.memory import SACMemory
 from src.dyna_like.gaussian_world_model import GaussianWorldModel
 
-class PolicySelector:
+class WorldModelPolicySelector:
     def __init__(self, env, n_policies, device):
         self.env = env
         self.n_policies = n_policies
