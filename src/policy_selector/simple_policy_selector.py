@@ -68,7 +68,8 @@ class SimplePolicySelector:
                 assert current_task in self.task_names, 'unmapped task encountered by bandit'
                 task_ind = self.task_names.index(current_task)
                 task_policy_row = self.task_policy_mapping[task_ind, :]
-                new_policy_ind = np.argmax(task_policy_row,axis=0)
+                max_inds = np.argwhere(task_policy_row == np.amax(task_policy_row)).flatten().tolist()
+                new_policy_ind = np.random.choice(max_inds)
             self.active_policy_ind = new_policy_ind
             self.active_policy = self.policies[new_policy_ind]
 
