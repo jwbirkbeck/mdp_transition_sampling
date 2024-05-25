@@ -83,7 +83,7 @@ class MetaWorldWrapper(gym.Env):
         return self.state, self.reward, self.done, self.truncated, self.info
 
     def get_observation(self):
-        # A compatibility method for wider testing
+        # A compatibility method for wider other
         return self.state
 
     def render(self):

@@ -32,7 +32,7 @@ for task in task_pool:
     if all(true_rewards - calcd_rewards < 1e-8):
         print("all rewards match for task " + task)
     else:
-        print("reward mismatch for task " + task + ", plotting")
+        print("reward mismatch for task " + task + ", plot_results")
         plt.hist(true_rewards - calcd_rewards)
         plt.title(task)
         plt.show()

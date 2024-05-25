@@ -147,7 +147,7 @@ plt.show()
 # policy = MLPLPGFTW(all_env_spec, hidden_sizes=(32, 32), k=1, max_k=3, seed=SEED)
 # agent = NPGFTW(envs, policy, baselines, normalized_step_size=0.01, seed=SEED, save_logs=True, new_col_mode='max_k')
 #
-# job_name = 'testing'
+# job_name = 'other'
 #
 # task_id = 0
 # env_id = envs[task_id].task_name

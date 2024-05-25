@@ -31,7 +31,7 @@ plt.show()
 # test that loading from a fake path fails
 # test that loading an agent with a different config fails
 
-save_path = '/opt/project/testing/agent_save'
+save_path = '/opt/project/other/agent_save'
 agent.save(save_path=save_path)
 
 new_agent = SACAgent(environment=env, hidden_layer_sizes=(128, 256), alpha=1e-4, gamma=0.99,
