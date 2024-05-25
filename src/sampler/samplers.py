@@ -2,6 +2,20 @@ import numpy as np
 import ot
 
 
+class RandomSampler:
+    def __init__(self, state_space, action_space, env_reward_function):
+        self.state_space = state_space
+        self.action_space = action_space
+        self.env_reward_function = env_reward_function
+
+    def sample(self, s_reward):
+        s_sample = self.state_space.sample()
+        a_sample = self.action_space.sample()
+        converged = True
+        # TODO: random sample from action space
+        return s_sample, a_sample, converged
+
+
 class MCCESampler:
     def __init__(self, state_space, action_space, env_reward_function):
         self.state_space = state_space
@@ -50,14 +64,19 @@ class MCCESampler:
         return final_state, final_action, converged
 
 class MDPDifferenceSampler:
-    def __init__(self, environment_a, environment_b, state_space, action_space):
+    def __init__(self, environment_a, environment_b, state_space, action_space, method='mcce'):
         self.environment_a = environment_a
         self.environment_b = environment_b
         self.state_space = state_space
         self.action_space = action_space
 
-        self.mcce_sampler = MCCESampler(state_space=self.state_space, action_space=self.action_space,
-                                        env_reward_function=self.environment_a.compute_reward_wrap)
+        self.method = method
+        if self.method == 'mcce':
+            self.sampler = MCCESampler(state_space=self.state_space, action_space=self.action_space,
+                                       env_reward_function=self.environment_a.compute_reward_wrap)
+        elif self.method =='random':
+            self.sampler = RandomSampler(state_space=self.state_space, action_space=self.action_space,
+                                         env_reward_function=self.environment_a.compute_reward_wrap)
 
     def get_difference(self, n_states, n_transitions):
         state_ncols = self.environment_a.observation_space.low.shape[0]
@@ -85,7 +104,7 @@ class MDPDifferenceSampler:
         states_converged = [None] * n_samples
         actions_converged = [None] * n_samples
         for ind in range(len(s_rewards)):
-            state, action, converged = self.mcce_sampler.sample(s_reward=s_rewards[ind])
+            state, action, converged = self.sampler.sample(s_reward=s_rewards[ind])
             s_states[ind] = state
             s_actions[ind] = action
             states_converged[ind] = converged
@@ -111,3 +130,4 @@ class MDPDifferenceSampler:
             rewards[ind] = reward
         observation = np.hstack((next_states, rewards))
         return observation
+
