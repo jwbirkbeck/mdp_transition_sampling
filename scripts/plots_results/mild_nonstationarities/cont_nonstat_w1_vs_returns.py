@@ -63,6 +63,7 @@ for task in task_selection:
                                    'w1': [dist]})
             w1_dists = pd.concat((w1_dists, pd_row))
     w1_dists.to_csv("w1_dists.csv", index=False)
+print("done")
 # # # # # # # # # #
 # Load IRIDIS runs of agent performance in each nonstat
 # # # # # # # # # #
