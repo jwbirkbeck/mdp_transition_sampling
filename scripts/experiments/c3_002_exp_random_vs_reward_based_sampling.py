@@ -6,15 +6,14 @@ from src.metaworld.wrapper import MetaWorldWrapper
 from src.sampler.samplers import MDPDifferenceSampler
 from src.utils.consts import task_pool_10, bounded_state_space
 
-# results_dir = "~/mdp_transition_sampling/results/"
-results_dir = "/opt/project/results/"
+results_dir = "~/mdp_transition_sampling/results/"
+# results_dir = "/opt/project/results/"
 results_path = os.path.join(results_dir, 'random_vs_reward_based_sampling/')
 
 # Filename and sole argument representing the index to be the base of comparison
-# assert len(sys.argv) == 2
-# assert sys.argv[1].isdigit(), 'python file index argument must be integer value'
-# run_index = int(sys.argv[1])
-run_index = 0
+assert len(sys.argv) == 2
+assert sys.argv[1].isdigit(), 'python file index argument must be integer value'
+run_index = int(sys.argv[1])
 
 device = torch.device('cpu')
                                                             # total sample sizes:
