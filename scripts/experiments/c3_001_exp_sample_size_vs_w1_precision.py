@@ -33,6 +33,8 @@ for params in sampling_params:
         for task_b in task_pool_10:
                 env_a = MetaWorldWrapper(task_name=task_a, render_mode=None)
                 env_b = MetaWorldWrapper(task_name=task_b, render_mode=None)
+                env_a.change_task(task_name=task_a, task_number=0)
+                env_b.change_task(task_name=task_b, task_number=0)
                 env_a.reset()
                 env_b.reset()
 
