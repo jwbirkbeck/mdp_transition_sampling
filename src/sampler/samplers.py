@@ -90,7 +90,7 @@ class MDPDifferenceSampler:
             obs_b = self.sample_transitions(mdp='b', state=state, action=action, n_transitions=n_transitions)
             observations_a[ind*n_transitions:(ind+1)*n_transitions, :] = obs_a
             observations_b[ind*n_transitions:(ind+1)*n_transitions, :] = obs_b
-        wasserstein_1 = self.get_wasserstein_1(samples_a=observations_a[[0]], samples_b=observations_b[[0]])
+        wasserstein_1 = self.get_wasserstein_1(samples_a=observations_a, samples_b=observations_b)
         return wasserstein_1
 
     def sample_rewards(self, n_samples):
