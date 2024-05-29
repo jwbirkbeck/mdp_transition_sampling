@@ -3,8 +3,9 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.stats import pearsonr
+from src.utils.consts import task_pool_10
 
-results_dir = "/opt/project/results/simple_w1_vs_returns/"
+results_dir = "/opt/project/results/simple_w1_vs_returns_test/"
 all_filenames = glob.glob(results_dir + "train_[0-9]*.csv")
 train_results = pd.DataFrame()
 for filename in all_filenames:
@@ -34,21 +35,22 @@ w_dists = w_dists.query('n_states == 25 and n_transitions == 10')
 w_dists = w_dists[w_dists.env_a.isin(task_pool)]
 w_dists = w_dists[w_dists.env_b.isin(task_pool)]
 
-ind = 0
-q = "env == '" + task_pool[ind] + "'"
-plt.plot(train_results.query(q).groupby('episodes').mean('rewards'))
-plt.show()
 
 for ind in range(5):
+    fig, ax = plt.subplots()
     q = "env_a == '" + task_pool[ind] + "' and episodes >= 950"
-    ax = test_results.query(q).drop(['env_a', 'episodes'], axis=1).reset_index().groupby('env_b').boxplot(column=['rewards'], subplots=False, figsize=(9 / 1.2, 6 / 1.2))
-    ax.set_xticks(ticks=range(1, len(task_pool) + 1), labels=task_pool)
+    plotdata = test_results.query(q)
+    plotdata['sopr'] = (max(plotdata['rewards']) - plotdata['rewards']) / (max(plotdata['rewards']) - min(plotdata['rewards']))
+    for ind2 in range(5):
+        plt.violinplot(plotdata['sopr'][plotdata.env_b==task_pool[ind2]], positions=[ind2+1], showmedians=True, bw_method=0.3)
+    # ax = plotdata.drop(['env_a', 'episodes', 'rewards'], axis=1).reset_index().groupby('env_b').boxplot(column=['sopr'], subplots=False, figsize=(9 / 1.2, 6 / 1.2))
+    ax.set_xticks(ticks=range(1, 6), labels=task_pool.tolist())
     ax.get_xticklabels()[ind].set_color('red')
     plt.xticks(rotation=-45, ha='left', rotation_mode='anchor')
-    plt.ylabel("Episode Reward")
+    plt.ylabel("SOPR")
     plt.xlabel("Task")
     plt.tight_layout()
-    plt.savefig('w1_vs_task_' + str(ind) + '_perf.png')
+    # plt.savefig('w1_vs_task_' + str(ind) + '_perf.png')
     plt.show()
 
 for ind in range(5):
@@ -59,7 +61,7 @@ for ind in range(5):
     plt.ylabel("Wasserstein Distance")
     plt.xlabel("Task")
     plt.tight_layout()
-    plt.savefig('w1_vs_task_' + str(ind) + '_w1.png')
+    # plt.savefig('w1_vs_task_' + str(ind) + '_w1.png')
     plt.show()
 
 ind = 4

@@ -1,10 +1,10 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from src.metaworld.wrapper import MetaWorldWrapper
-from src.utils.consts import task_pool
+from src.utils.consts import task_pool_10
 
 
-for task in task_pool:
+for task in task_pool_10:
     env = MetaWorldWrapper(task_name=task)
 
     env.reset()

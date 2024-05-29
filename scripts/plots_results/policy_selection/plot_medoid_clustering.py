@@ -44,7 +44,7 @@ for i in range(0, 10):
                        ha="center", va="center", color="black", size=8)
 plt.title("10-MDP Wasserstein distance matrix")
 plt.tight_layout()
-plt.savefig('dist_matrix.png')
+plt.savefig('dist_matrix.png', dpi=200)
 plt.show()
 
 G = nx.Graph()
@@ -62,8 +62,10 @@ for n in range(len(dist_matrix)):
         labels[ (n,n+m+1) ] = str(round(dist_matrix[n][n+m+1], 2))
 
 pos=nx.spring_layout(G, weight='edge_length', iterations=1000)
-nx.draw(G, pos, node_color=clusters, edge_color='lightgrey')
-nx.draw_networkx_edge_labels(G, pos, edge_labels=labels, font_size=6)
+nx.draw(G, pos, node_color=clusters, edge_color='lightgrey', with_labels=True, node_size=1200)
+plt.xlim([0.93 * i for i in plt.xlim()])
+plt.ylim([0.93 * i for i in plt.ylim()])
+plt.savefig('clusters.png', dpi=200, bbox_inches="tight")
 plt.show()
 
 
@@ -73,12 +75,15 @@ print("Optimal number of clusters according to the Medoid Silhouette:", dm.bestk
 print("Medoid Silhouette over range of k:", dm.losses)
 print("Range of k:", dm.rangek)
 
+plt.figure(figsize=(9/1.4, 6/1.4))
 plt.scatter(dm.rangek, dm.losses)
 plt.xlabel("Number of clusters")
-plt.ylabel("Score")
-plt.title("Medoid silhouette score (higher is better)")
+plt.ylabel("Silhouette ccore")
+plt.title("K-medoid silhouette score (higher is better)")
 plt.tight_layout()
-plt.savefig('cluster_by_score.png')
+plt.xticks(ticks=range(11), labels=range(11))
+plt.yticks(ticks=[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0], labels=[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
+plt.savefig('cluster_by_score.png', dpi=200)
 plt.show()
 
 kmin, kmax = 1, len(10)

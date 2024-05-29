@@ -14,6 +14,15 @@ env.reset()
 for _ in range(250):
     env.change_task()
 
+"""
+reset task
+set a state
+get resulting next state and reward
+reset task again
+set same state
+
+"""
+
 state = np.zeros(shape=[1, 39])
 # state[:, 0:3] = np.array([[0.3, 0.8, 0.1]])
 # state[:, 4:7] = np.array([[0.1, 0.8, 0.0001]])

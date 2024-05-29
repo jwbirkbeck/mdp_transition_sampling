@@ -1,16 +1,17 @@
 import pandas as pd
 from src.metaworld.wrapper import MetaWorldWrapper
 from src.sampler.samplers import MDPDifferenceSampler
-from src.utils.consts import task_pool, bounded_state_space
+from src.utils.consts import task_pool, task_pool_10, bounded_state_space
 
 # new_task_pool = [task_pool[ind] for ind in range(len(task_pool)) if ind not in (4, 10, 11, 12, 16)]
-err_task_pool = [task_pool[ind] for ind in range(len(task_pool)) if ind in (4, 10, 11, 12, 16)]
-
-task = err_task_pool[0]
+# err_task_pool = [task_pool[ind] for ind in range(len(task_pool)) if ind in (4, 10, 11, 12, 16)]
+# exp_task_pool = err_task_pool
+# task = err_task_pool[0]
 
 reps = 10
 results = pd.DataFrame()
-exp_task_pool = err_task_pool
+task = 'handle-press-v2'
+exp_task_pool = task_pool_10
 for rep in range(reps):
     for ind in range(len(exp_task_pool)):
         percent_prog = round(100 * (((rep * len(exp_task_pool)) + ind) / (reps * len(exp_task_pool))), 1)

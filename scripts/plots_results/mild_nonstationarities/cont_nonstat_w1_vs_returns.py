@@ -25,6 +25,24 @@ high_inds = np.arange(nonstat_sequence_length / 2, nonstat_sequence_length+1, no
 nonstat_eval_inds = np.concatenate((low_inds, med_inds, high_inds))
 nonstat_eval_reps = 10
 
+# env_a = MetaWorldWrapper(task_name=task_selection[0])
+# env_a.change_task(task_name=task_selection[0], task_number=0)
+# env_a.reset()
+#
+# env_b = MetaWorldWrapper(task_name=task_selection[0])
+# env_b.change_task(task_name=task_selection[0], task_number=0)
+# env_b.reset()
+#
+# state_space = env_a.observation_space
+# action_space = env_a.action_space
+#
+# sampler = MDPDifferenceSampler(environment_a=env_a,
+#                                environment_b=env_b,
+#                                state_space=state_space,
+#                                action_space=action_space)
+#
+# sampler.get_difference(n_states=50, n_transitions=5)
+
 w1_dists = pd.DataFrame()
 for task in task_selection:
     print(task)
@@ -59,6 +77,7 @@ for task in task_selection:
         ns_dist.set_sequence_ind(ind=test_ind)
         for _ in range(nonstat_eval_reps):
             dist = sampler.get_difference(n_states=50, n_transitions=5)
+            print(dist)
             pd_row = pd.DataFrame({'task': [task], 'test_ind': [test_ind],
                                    'w1': [dist]})
             w1_dists = pd.concat((w1_dists, pd_row))
@@ -99,13 +118,15 @@ good_runs = list(train_results.query('episode == 749 and rewards > 4000')['run']
 train_results2 = train_results.query('run in ' + str(good_runs))
 eval_results2 = eval_results.query('run in ' + str(good_runs))
 
-ax = w1_dists.groupby('test_ind').boxplot(column=['w1'], subplots=False)
+w1_dists2 = w1_dists[w1_dists.task.isin(['handle-press-side-v2', 'handle-press-v2', 'plate-slide-back-v2'])]
+
+ax = w1_dists2.groupby('test_ind').boxplot(column=['w1'], subplots=False)
 plt.xticks(rotation=-45, ha='left', rotation_mode='anchor')
 ax.set_xticks(ticks=range(1, len(w1_dists.test_ind.unique()) + 1), labels=w1_dists.test_ind.unique())
 plt.xlabel("Non-stationarity sequence Index")
 plt.ylabel("Measured Wasserstein distance")
-plt.tight_layout()
 plt.ylim(0, 5)
+plt.tight_layout()
 plt.savefig('w1_vs_test_ind.png')
 plt.show()
 

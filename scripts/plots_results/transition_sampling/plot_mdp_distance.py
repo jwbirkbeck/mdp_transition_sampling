@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import glob
-from src.utils.consts import task_pool
+from src.utils.consts import task_pool, task_pool_10
 
 results_dir = "/opt/project/results/task_transition_sampling/"
 all_filenames = glob.glob(results_dir + "results_[0-9]*.csv")
@@ -24,10 +24,11 @@ query9 = 'n_states==25 and n_transitions==10'
 exp_task_pool = [task_pool[i] for i in range(len(task_pool)) if i not in [12, 16]]
 trained_agents_pool = [exp_task_pool[i] for i in range(len(exp_task_pool)) if i in [6, 7, 8, 9, 10, 11, 13, 14]]
 
-task_selection = ['handle-press-side-v2', 'handle-press-v2', 'plate-slide-back-v2', 'reach-v2', 'reach-wall-v2']
-# trained_agents_pool = task_pool
-trained_agents_pool = task_selection
+# task_selection = ['handle-press-side-v2', 'handle-press-v2', 'plate-slide-back-v2', 'reach-v2', 'reach-wall-v2']
+# # trained_agents_pool = task_pool
+# trained_agents_pool = task_selection
 
+trained_agents_pool = task_pool_10
 results2 = results[results.env_a.isin(trained_agents_pool)]
 results2 = results2[results2.env_b.isin(trained_agents_pool)]
 
