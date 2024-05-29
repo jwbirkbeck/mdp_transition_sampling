@@ -4,6 +4,7 @@ import metaworld
 import mujoco
 import numpy as np
 from random import choice
+from src.utils.consts import bounded_state_space
 try:
     from metaworld.envs import reward_utils
 except ImportError:
@@ -28,11 +29,12 @@ class MetaWorldWrapper(gym.Env):
         self.action_space = copy(self.env.action_space)
 
         # Set -inf and inf bounds in state space to large but numeric values for sampling purposes.
-        low = self.observation_space.low
-        high = self.observation_space.high
-        low[np.isinf(low)] = -10.0
-        high[np.isinf(high)] = 10.0
-        self.observation_space = Box(low=low, high=high)
+        # low = self.observation_space.low
+        # high = self.observation_space.high
+        # low[np.isinf(low)] = -10.0
+        # high[np.isinf(high)] = 10.0
+        # self.observation_space = Box(low=low, high=high)
+        self.observation_space = bounded_state_space
 
         self.ns_dist = None
 

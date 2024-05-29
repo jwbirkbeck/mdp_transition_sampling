@@ -54,12 +54,19 @@ hand_high = np.array((0.525, 1.025, 0.7))
 #   in the '_get_curr_obs_combined_no_goal' method of MetaWorld's `sawyer_xyz_env.py`
 grip_low = np.array([0.0])
 grip_high = np.array([1.0])
-obj_xyz_low = np.array((-0.35, 0.50, -0.001))
-obj_xyz_high = np.array((0.2, 0.90, 0.15))
+# obj_xyz_low = np.array((-0.35, 0.50, -0.001))
+# obj_xyz_high = np.array((0.2, 0.90, 0.15))
+# obj_quat_low = -1.0 * np.array((1.0, 1.0, 1.0, 1.0))
+# obj_quat_high = np.array((1.0, 1.0, 1.0, 1.0))
+# goal_xyz_low = np.array((-0.35, 0.4, -0.001))
+# goal_xyz_high = np.array((0.3, 0.90, 0.3))
+obj_xyz_low = np.array((-10., -10., -10.))
+obj_xyz_high = np.array((10., 10., 10.))
 obj_quat_low = -1.0 * np.array((1.0, 1.0, 1.0, 1.0))
 obj_quat_high = np.array((1.0, 1.0, 1.0, 1.0))
-goal_xyz_low = np.array((-0.35, 0.4, -0.001))
-goal_xyz_high = np.array((0.3, 0.90, 0.3))
+goal_xyz_low = np.array((-10., -10., -10.))
+goal_xyz_high = np.array((10, 10, 10))
+
 
 # The below is the description of the state space from the paper in 'code form' for reference.
 # end_eff_xpos = state[0:3]
