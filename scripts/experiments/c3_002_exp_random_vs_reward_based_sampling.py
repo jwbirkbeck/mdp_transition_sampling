@@ -23,8 +23,8 @@ sampling_params = [{'n_states': 15, 'n_transitions': 5 },   # 150
 
 results = pd.DataFrame()
 for params in sampling_params:
-    for task_a in task_pool_10:
-        for task_b in task_pool_10:
+    for task_a in [i for i in task_pool_10 if i != 'plate-slide-back-v2']:
+        for task_b in [i for i in task_pool_10 if i != 'plate-slide-back-v2']:
                 env_a = MetaWorldWrapper(task_name=task_a, render_mode=None)
                 env_b = MetaWorldWrapper(task_name=task_b, render_mode=None)
                 env_a.reset()
