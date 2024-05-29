@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from src.metaworld.nonstationarity_distribution import MWNSDistribution
 from src.metaworld.wrapper import MetaWorldWrapper
 from src.sampler.samplers import MDPDifferenceSampler
-from src.utils.consts import task_pool_10, bounded_state_space
+from src.utils.consts import task_pool_10
 np.set_printoptions(suppress=True)
 
 """
@@ -19,56 +19,59 @@ Determine whether the high W1s are legitimate or not.
 
 # measuring differences between MDPs:
 
-def get_w1_dists(task_mappings):
-    tasks_a = task_mappings['tasks_a']
-    tasks_b = task_mappings['tasks_b']
-    reps = task_mappings['reps'][0]
+def get_task_w1_dist(job_info):
+    task_a = job_info['task_a'][0]
+    task_b = job_info['task_b'][0]
+    reps = job_info['reps'][0]
     w1_dists = pd.DataFrame()
-    for task_a in tasks_a:
-        for task_b in tasks_b:
-            env_a = MetaWorldWrapper(task_name=task_a)
-            env_b = MetaWorldWrapper(task_name=task_b)
-            state_space = bounded_state_space
-            action_space = env_a.action_space
 
-            sampler = MDPDifferenceSampler(environment_a=env_a,
-                                           environment_b=env_b,
-                                           state_space=state_space,
-                                           action_space=action_space)
+    env_a = MetaWorldWrapper(task_name=task_a)
+    env_b = MetaWorldWrapper(task_name=task_b)
+    state_space = env_a.observation_space
+    action_space = env_a.action_space
 
-            for rep in range(reps):
-                env_a.reset()
-                env_b.reset()
-                dist = sampler.get_difference(n_states=15, n_transitions=2)
-                pd_row = pd.DataFrame({'task_a': [task_a], 'task_b': [task_b], 'rep': [rep], 'w1': [dist]})
-                w1_dists = pd.concat((w1_dists, pd_row))
+    sampler = MDPDifferenceSampler(environment_a=env_a,
+                                   environment_b=env_b,
+                                   state_space=state_space,
+                                   action_space=action_space)
+
+    for rep in range(reps):
+        env_a.reset()
+        env_b.reset()
+        dist = sampler.get_difference(n_states=50, n_transitions=5)
+        pd_row = pd.DataFrame({'task_a': [task_a], 'task_b': [task_b], 'rep': [rep], 'w1': [dist]})
+        w1_dists = pd.concat((w1_dists, pd_row))
+
     return w1_dists
 
 def make_split_task_mappings(tasks, reps):
     list_of_dicts = []
     for task_a in tasks:
-        dict = {'tasks_a': [task_a], 'tasks_b': tasks, 'reps': [reps]}
-        list_of_dicts.append(dict)
+        for task_b in tasks:
+            dict = {'task_a': [task_a], 'task_b': [task_b], 'reps': [reps]}
+            list_of_dicts.append(dict)
     return list_of_dicts
 
-#
-# list_mappings = make_split_task_mappings(tasks=task_pool_10, reps=3)
-#
-# with mp.Pool(10) as pool:
-#     w1_dists = pd.concat(pool.map(get_w1_dists, list_mappings))
-# print('done')
-#
-# w1_dists = w1_dists.drop('index', axis=1)
-#
-# for task_a in [task_pool_10[0]]:
-#     fig, ax = plt.subplots()
-#     for posind, task_b in enumerate(task_pool_10):
-#         plotdata = w1_dists.query("task_a=='" + task_a + "' and task_b=='" + task_b + "'")
-#         plt.boxplot(plotdata['w1'], positions=[posind])
-#     ax.set_xticks(ticks=range(0, posind + 1), labels=task_pool_10)
-#     plt.xticks(rotation=-45, ha='left', rotation_mode='anchor')
-#     plt.tight_layout()
-#     plt.show()
+list_mappings = make_split_task_mappings(tasks=task_pool_10, reps=10)
+print(len(list_mappings))
+
+with mp.Pool(14) as pool:
+    task_w1_dists = pd.concat(pool.map(get_task_w1_dist, list_mappings))
+print('done')
+
+task_w1_dists.to_csv('task_w1_dists.csv')
+
+for redind, task_a in enumerate(task_pool_10):
+    fig, ax = plt.subplots()
+    for posind, task_b in enumerate(task_pool_10):
+        plotdata = task_w1_dists.query("task_a=='" + task_a + "' and task_b=='" + task_b + "'")
+        plt.boxplot(plotdata['w1'], positions=[posind])
+    ax.set_xticks(ticks=range(0, posind + 1), labels=task_pool_10)
+    ax.get_xticklabels()[redind].set_color('red')
+    plt.xticks(rotation=-45, ha='left', rotation_mode='anchor')
+    plt.tight_layout()
+    plt.show()
+
 
 def get_w1_dists_ns(job_info):
     tasks = job_info['tasks']
@@ -128,8 +131,6 @@ def make_ns_job_infos(tasks, ns_inds, repeats):
             list_of_dicts.append(dict)
     return list_of_dicts
 
-
-
 nonstat_sequence_length = 100_000
 # low_inds = np.arange(0, nonstat_sequence_length / 10, nonstat_sequence_length / 100, dtype=int)
 # med_inds = np.arange(nonstat_sequence_length / 10, nonstat_sequence_length/2, nonstat_sequence_length / 20, dtype=int)
@@ -137,18 +138,28 @@ nonstat_sequence_length = 100_000
 # nonstat_eval_inds = np.concatenate((low_inds, med_inds, high_inds))
 # nonstat_eval_inds = [nonstat_eval_inds[0]] + [nonstat_eval_inds[-1]]
 nonstat_eval_inds = np.arange(0, nonstat_sequence_length+1, nonstat_sequence_length / 20, dtype=int)
-job_info = make_ns_job_infos(tasks=task_pool_10[0:5], ns_inds=nonstat_eval_inds, repeats=10)
+job_info = make_ns_job_infos(tasks=task_pool_10, ns_inds=nonstat_eval_inds, repeats=10)
 len(job_info)
 
 with mp.Pool(10) as pool:
     w1_dists = pd.concat(pool.map(get_w1_dists_ns, job_info))
 print('done')
 
+w1_dists.to_csv('ns_w1_dists.csv')
+
+w1_dists2 = w1_dists
 fig, ax = plt.subplots()
 for posind, ind in enumerate(nonstat_eval_inds):
-    plotdata = w1_dists.query("ns_seq_ind==" + str(ind))
+    plotdata = w1_dists2.query("ns_seq_ind==" + str(ind))
     plt.boxplot(plotdata['w1'], positions=[posind])
 ax.set_xticks(ticks=range(0, posind + 1), labels=nonstat_eval_inds)
 plt.xticks(rotation=-45, ha='left', rotation_mode='anchor')
+plt.ylim(0, 5)
 plt.tight_layout()
 plt.show()
+
+# Problematic tasks:
+# dial-turn-v2
+# reach-v2
+# reach-wall-v2
+

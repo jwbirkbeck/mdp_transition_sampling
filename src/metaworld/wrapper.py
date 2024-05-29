@@ -76,6 +76,7 @@ class MetaWorldWrapper(gym.Env):
     def step(self, action):
         if self.ns_dist is None:
             state, reward, terminated, truncated, info = self.env.step(action)
+            state = np.clip(state, a_min=self.observation_space.low, a_max=self.observation_space.high)
         else:
             state, reward, terminated, truncated, info = self.ns_dist.step_with_ns(action=action, env=self)
         if self.negate_rewards:
