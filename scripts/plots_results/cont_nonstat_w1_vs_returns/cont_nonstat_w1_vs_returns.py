@@ -83,9 +83,12 @@ for task in task_selection:
             w1_dists = pd.concat((w1_dists, pd_row))
     w1_dists.to_csv("w1_dists.csv", index=False)
 print("done")
+
 # # # # # # # # # #
 # Load IRIDIS runs of agent performance in each nonstat
 # # # # # # # # # #
+
+w1_dists = pd.read_csv("w1_dists.csv")
 
 results_dir = "/opt/project/results/cont_nonstat_w1_vs_returns/"
 all_filenames = glob.glob(results_dir + "train_[0-9]*.csv")
@@ -111,14 +114,14 @@ for run in train_results.run.unique():
     plotdata = train_results[train_results.run == run]['rewards'].values
     plt.plot(plotdata, label=run)
     plt.title(run)
-    plt.show()
+plt.show()
 
-good_runs = list(train_results.query('episode == 749 and rewards > 4000')['run'].values)
+good_runs = list(train_results.query('episode == 749 and rewards > 4000')['run'].unique())
 
-train_results2 = train_results.query('run in ' + str(good_runs))
-eval_results2 = eval_results.query('run in ' + str(good_runs))
+train_results2 = train_results.query(f'run in {good_runs}')
+eval_results2 = eval_results.query(f'run in {good_runs}')
 
-w1_dists2 = w1_dists[w1_dists.task.isin(['handle-press-side-v2', 'handle-press-v2', 'plate-slide-back-v2'])]
+w1_dists2 = w1_dists
 
 ax = w1_dists2.groupby('test_ind').boxplot(column=['w1'], subplots=False)
 plt.xticks(rotation=-45, ha='left', rotation_mode='anchor')

@@ -214,7 +214,6 @@ fabric.properties
 .idea/caches/build_file_checksums.ser
 
 # Data:
-*.csv
 *.pickle
 *.png
 *.tar.gz
