@@ -53,5 +53,19 @@ for task in [task_sel[2]]:
         # plt.savefig('mdp_distances_smallest_sample_reach.png', dpi=200)
         plt.show()
 
+fig, ax = plt.subplots(figsize=(9/1.4, 6/1.4))
+for ind, dist in enumerate(['rand_dist', 'rew_dist']):
+    plotdata = results.groupby(['env_a', 'env_b', 'n_states', 'n_transitions'])
+    plt.violinplot(plotdata[dist].std(), positions=[ind], bw_method=0.4, showmedians=True)
+ax.set_xticks(ticks=[0, 1], labels=['Random', 'Proposed'])
+plt.xlabel('Sampling scheme')
+plt.ylabel("Standard deviation of estimate")
+plt.title("Standard deviation of estimation (lower is better)")
+plt.tight_layout()
+plt.savefig("std_of_schemes.png", dpi=200)
+plt.show()
+
+
 results.groupby(['env_a', 'env_b', 'n_states', 'n_transitions'])[['rand_dist', 'rew_dist']].std().boxplot()
+
 plt.show()
