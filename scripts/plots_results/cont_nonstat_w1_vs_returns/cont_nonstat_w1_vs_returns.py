@@ -89,6 +89,7 @@ print("done")
 # # # # # # # # # #
 
 w1_dists = pd.read_csv("w1_dists.csv")
+w1_dists['test_ind'] = w1_dists['ns_seq_ind']
 
 results_dir = "/opt/project/results/cont_nonstat_w1_vs_returns/"
 all_filenames = glob.glob(results_dir + "train_[0-9]*.csv")
@@ -130,7 +131,7 @@ plt.xlabel("Non-stationarity sequence Index")
 plt.ylabel("Measured Wasserstein distance")
 plt.ylim(0, 5)
 plt.tight_layout()
-plt.savefig('w1_vs_test_ind.png')
+# plt.savefig('w1_vs_test_ind.png')
 plt.show()
 
 plt.scatter(w1_dists.test_ind.unique(), w1_dists.groupby('test_ind')['w1'].median())
@@ -167,7 +168,7 @@ plt.xlabel("W1 distance from training MDP")
 plt.ylabel("Episode Total Rewards")
 plt.title("Agent Returns vs W1 to new MDP, five-task aggregation")
 plt.tight_layout()
-plt.savefig("w1_vs_performance_violinplot_5_tasks.png")
+# plt.savefig("w1_vs_performance_violinplot_5_tasks.png")
 plt.show()
 
 for task in task_selection:

@@ -1,6 +1,7 @@
 import numpy as np
 from gymnasium.spaces import Box
 
+
 """
 Task pool selection process:
 - Beginning with the 52 Metaworld tasks,
@@ -40,13 +41,10 @@ task_pool_10 = ['coffee-button-v2', 'dial-turn-v2', 'door-unlock-v2',
                 'reach-v2', 'reach-wall-v2']
 
 
-"""
-All-task sub-space bounds process:
-In each of the above tasks' files, bounds are defined for the subspace of hand xyz, obj xyz, and goal xyz coordinates.
-Finally, the hand position is also bounded in MetaWorld's agent-facing state space Box.
-The below bounds are the widest values over all values.
-"""
-
+# # # # # # # # # #
+# The default observation space of Metaworld is too wide - the lower and upper bounds are infinite in many cases.
+# For sampling, we need to define finite bounds which still encompass all possible states, e.g. [-10, 10] in most cases
+# # # # # # # # # #
 hand_low = np.array((-0.525, 0.348, -0.0525))
 hand_high = np.array((0.525, 1.025, 0.7))
 # Note an error in Metaworld's default bounds - the gripper is NOT bounded by [-1, 1], as evidenced by
@@ -54,12 +52,6 @@ hand_high = np.array((0.525, 1.025, 0.7))
 #   in the '_get_curr_obs_combined_no_goal' method of MetaWorld's `sawyer_xyz_env.py`
 grip_low = np.array([0.0])
 grip_high = np.array([1.0])
-# obj_xyz_low = np.array((-0.35, 0.50, -0.001))
-# obj_xyz_high = np.array((0.2, 0.90, 0.15))
-# obj_quat_low = -1.0 * np.array((1.0, 1.0, 1.0, 1.0))
-# obj_quat_high = np.array((1.0, 1.0, 1.0, 1.0))
-# goal_xyz_low = np.array((-0.35, 0.4, -0.001))
-# goal_xyz_high = np.array((0.3, 0.90, 0.3))
 obj_xyz_low = np.array((-10., -10., -10.))
 obj_xyz_high = np.array((10., 10., 10.))
 obj_quat_low = -1.0 * np.array((1.0, 1.0, 1.0, 1.0))
@@ -67,15 +59,14 @@ obj_quat_high = np.array((1.0, 1.0, 1.0, 1.0))
 goal_xyz_low = np.array((-10., -10., -10.))
 goal_xyz_high = np.array((10, 10, 10))
 
-
-# The below is the description of the state space from the paper in 'code form' for reference.
+# The below is the description of the state space from the paper's code for reference.
 # end_eff_xpos = state[0:3]
 # gripper_open_normalized = state[3]
 # obj1_xpos = state[4:7]
 # obj1_qpos = state[7:11]
-# # obj2_xpos = state[11:14]
-# # obj2_qpos = state[14:18]
-# # prev_obs = state[18:36]
+# obj2_xpos = state[11:14]
+# obj2_qpos = state[14:18]
+# prev_obs = state[18:36]
 # goal_xpos = state[36:39]
 
 low = np.concatenate((hand_low, grip_low, obj_xyz_low, obj_quat_low, obj_xyz_low, obj_quat_low,
@@ -86,5 +77,10 @@ high = np.concatenate((hand_high, grip_high, obj_xyz_high, obj_quat_high, obj_xy
                        goal_xyz_high), axis=0)
 
 bounded_state_space = Box(low=low, high=high)
-assert len(bounded_state_space.low) == 39
-assert len(bounded_state_space.high) == 39
+
+
+# # # # # # # # # #
+# non-stationarity distribution constants
+# # # # # # # # # #
+ns_seq_length = 100_000
+ns_test_inds = np.arange(0, ns_seq_length + 1, 2500, dtype=int)

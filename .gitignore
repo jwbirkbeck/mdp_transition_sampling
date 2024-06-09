@@ -225,5 +225,8 @@ fabric.properties
 # Results:
 results/
 
+# Model saves:
+models/
+
 # PyCharm .idea files:
 .idea/*
