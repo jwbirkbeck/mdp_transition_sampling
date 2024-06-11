@@ -8,21 +8,13 @@ from src.metaworld.wrapper import MetaWorldWrapper
 from src.utils.consts import task_pool_10
 from src.utils.filepaths import *
 
-"""
-For each of the ten tasks,
-    Train an agent until convergence
-    Test the agent against each ns in the sequence
-"""
 
-base_path = results_path_local
+results_dir = os.path.join(results_path_iridis, 'c3_003a_train_agents')
+model_dir = os.path.join(model_path_iridis, 'c3_003a_train_agents')
 
-results_dir = os.path.join(results_path_local, 'c3_003a_train_agents')
-model_dir = os.path.join(model_path_local, 'c3_003a_train_agents')
-
-# assert len(sys.argv) == 2
-# assert sys.argv[1].isdigit(), 'python file index argument must be integer value'
-# run_index = int(sys.argv[1])
-run_index = 0
+assert len(sys.argv) == 2
+assert sys.argv[1].isdigit(), 'python file index argument must be integer value'
+run_index = int(sys.argv[1])
 
 device = torch.device("cpu")
 n_training_eps = 5000
