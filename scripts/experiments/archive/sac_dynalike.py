@@ -3,7 +3,7 @@ import os
 import torch
 import pandas as pd
 from src.soft_actor_critic.sac_agent import SACAgent
-from src.dyna_like.SAC_dyna import SACDynaLike
+from src.dyna_like_agent.SAC_dyna import SACDynaLike
 from src.metaworld.wrapper import MetaWorldWrapper
 
 results_path = os.path.expanduser('~/mdp_transition_sampling/results/sac_dynalike/')

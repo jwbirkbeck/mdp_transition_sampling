@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
-from src.dyna_like.gaussian_world_model import GaussianWorldModel
+from src.dyna_like_agent.gaussian_world_model import GaussianWorldModel
 from src.metaworld.wrapper import MetaWorldWrapper
 
 env = MetaWorldWrapper(task_name='reach-v2')

@@ -2,7 +2,7 @@ import torch
 import numpy as np
 from math import isnan, floor
 from src.soft_actor_critic.sac_agent import SACAgent
-from src.dyna_like.gaussian_world_model import GaussianWorldModel
+from src.dyna_like_agent.gaussian_world_model import GaussianWorldModel
 
 class SACDynaLike(SACAgent):
     def __init__(self, environment, hidden_layer_sizes, alpha, gamma, batch_size, memory_length, device,

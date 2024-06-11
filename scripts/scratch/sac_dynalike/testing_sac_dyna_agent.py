@@ -1,8 +1,8 @@
 import torch
 import matplotlib.pyplot as plt
 
-from src.dyna_like.SAC_dyna import SACDynaLike
-from src.dyna_like.SAC_dyna_random_batch import SACDynaRandom
+from src.dyna_like_agent.SAC_dyna import SACDynaLike
+from src.dyna_like_agent.SAC_dyna_random_batch import SACDynaRandom
 from src.soft_actor_critic.sac_agent import SACAgent
 from src.metaworld.wrapper import MetaWorldWrapper
 

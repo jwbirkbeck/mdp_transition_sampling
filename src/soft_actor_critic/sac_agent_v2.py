@@ -3,10 +3,10 @@ import torch
 import torch.nn.functional as funcs
 from src.soft_actor_critic.actor import Actor
 from src.soft_actor_critic.critic import Critic
-from src.soft_actor_critic.memory import SACMemory
+from src.soft_actor_critic.memory_v2 import MemoryV2
 
 
-class SACAgent:
+class SACAgentV2:
     def __init__(self, environment, hidden_layer_sizes, alpha, gamma, batch_size, memory_length, device,
                  polyak=0.995):
         self.environment = environment
@@ -27,10 +27,14 @@ class SACAgent:
         self.steps = 0
         self.training_steps = 0
 
-        self.memory = SACMemory(memory_length=self.memory_length, device=self.device)
-
         input_size = self.environment.observation_space.shape[0]
         action_size = self.environment.action_space.shape[0]
+
+        self.memory = MemoryV2(state_length=input_size,
+                               action_length=action_size,
+                               max_memories=int(1e6),
+                               device=device)
+
         self.actor = Actor(input_size=input_size, hidden_layer_sizes=self.hidden_layer_sizes, action_size=action_size,
                            alpha=self.alpha, device=self.device)
         self.critic1 = Critic(input_size=input_size, hidden_layer_sizes=self.hidden_layer_sizes,
@@ -141,7 +145,7 @@ class SACAgent:
         next_state = next_state.reshape((1, -1))
         reward = torch.tensor([reward], dtype=torch.float, device=self.device).reshape((1, -1))
         terminated = torch.tensor([terminated], device=self.device).reshape((1, -1))
-        self.memory.append(state=state, action=action, next_state=next_state, reward=reward, done=terminated)
+        self.memory.append(states=state, actions=action, next_states=next_state, rewards=reward, terminateds=terminated)
 
     @torch.no_grad()
     def polyak_update(self, polyak=None):
@@ -160,13 +164,13 @@ class SACAgent:
                   'memory_length': self.memory_length,
                   'polyak': str(self.polyak)}
         json_dict = json.dumps(config)
-        full_path = os.path.join(save_path, 'config.json')
+        full_path = os.path.join(save_path, 'sac_config.json')
         with open(full_path, "w") as file:
             file.write(json_dict)
             os.chmod(full_path, 0o777)
 
     def _check_config(self, load_path):
-        full_path = os.path.join(load_path, 'config.json')
+        full_path = os.path.join(load_path, 'sac_config.json')
 
         assert os.path.isfile(full_path), 'config error: a config file does not exist at provided load_path'
         with open(full_path, "r") as file:

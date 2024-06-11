@@ -2,7 +2,7 @@ import torch
 import numpy as np
 from src.policy_selector.sac_policy import SACPolicy
 from src.soft_actor_critic.memory import SACMemory
-from src.dyna_like.gaussian_world_model import GaussianWorldModel
+from src.dyna_like_agent.gaussian_world_model import GaussianWorldModel
 
 class WorldModelPolicySelector:
     def __init__(self, env, n_policies, device):
@@ -75,7 +75,7 @@ class WorldModelPolicySelector:
             self.active_ind = best_worldmodel_index
             worldmodel = self.worldmodels[self.active_ind]
             if train:
-                for s, a, ns, r, done in zip(mem.state, mem.action, mem.next_state, mem.reward, mem.done):
+                for s, a, ns, r, done in zip(mem.state, mem.action, mem.next_state, mem.reward, mem.terminated):
                     worldmodel.train_step(state=s.reshape(1, -1),
                                           action=a.reshape(1, -1),
                                           next_state=ns.reshape(1, -1),

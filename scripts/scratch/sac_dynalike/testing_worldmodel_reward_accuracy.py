@@ -1,6 +1,6 @@
 import torch
 import matplotlib.pyplot as plt
-from src.dyna_like.gaussian_world_model import GaussianWorldModel
+from src.dyna_like_agent.gaussian_world_model import GaussianWorldModel
 from src.metaworld.wrapper import MetaWorldWrapper
 from src.utils.consts import task_pool
 

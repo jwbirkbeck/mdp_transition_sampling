@@ -48,25 +48,80 @@ plt.xticks(rotation=-45, ha='left', rotation_mode='anchor')
 plt.tight_layout()
 plt.show()
 
-# # # # # # # # # #
-# sopr vs w1
-# # # # # # # # # #
+
+def lowess(x, y, f=1./3.):
+    """
+    Basic LOWESS smoother with uncertainty.
+    Note:
+        - Not robust (so no iteration) and
+             only normally distributed errors.
+        - No higher order polynomials d=1
+            so linear smoother.
+    """
+    # get some paras
+    xwidth = f*(x.max()-x.min()) # effective width after reduction factor
+    N = len(x) # number of obs
+    # Don't assume the data is sorted
+    order = np.argsort(x)
+    # storage
+    y_sm = np.zeros_like(y)
+    y_stderr = np.zeros_like(y)
+    # define the weigthing function -- clipping too!
+    tricube = lambda d : np.clip((1- np.abs(d)**3)**3, 0, 1)
+    # run the regression for each observation i
+    for i in range(N):
+        dist = np.abs((x[order][i]-x[order]))/xwidth
+        w = tricube(dist)
+        # form linear system with the weights
+        A = np.stack([w, x[order]*w]).T
+        b = w * y[order]
+        ATA = A.T.dot(A)
+        ATb = A.T.dot(b)
+        # solve the syste
+        sol = np.linalg.solve(ATA, ATb)
+        # predict for the observation only
+        yest = A[i].dot(sol)# equiv of A.dot(yest) just for k
+        place = order[i]
+        y_sm[place]=yest
+        sigma2 = (np.sum((A.dot(sol) -y [order])**2)/N )
+        # Calculate the standard error
+        y_stderr[place] = np.sqrt(sigma2 *
+                                A[i].dot(np.linalg.inv(ATA)
+                                                    ).dot(A[i]))
+    return y_sm, y_stderr
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+x = np.array(plotdata.w1)
+y = np.array(plotdata.sopr)
+order = np.argsort(x)
+y_sm, y_std = lowess(x, y, f=1./5.)
+
+
+bins = [0.03, 0.15, 0.3, 0.5, 0.7, 0.9, 1.1, 1.3, 1.5, 1.7, 1.9, 2.1]
+
 plotdata = agent_results[agent_results.w1 < 2.0]
-_, bins = pd.qcut(plotdata.w1, q=10, retbins=True)
+# _, bins = pd.qcut(plotdata.w1, q=16, retbins=True)
 fig, ax = plt.subplots(figsize=(8 / 1.2, 5 / 1.2))
+# plt.plot(x[order], y_sm[order], color='black', label='LOWESS', alpha=0.2)
+# plt.fill_between(x[order], y_sm[order] - 1.96*y_std[order], y_sm[order] + 1.96*y_std[order], alpha=0.15, label='LOWESS uncertainty')
+bin_vols = []
 for ind in range(len(bins) - 1):
     bin_low = bins[ind]
     bin_high = bins[ind + 1]
     this_boxplot_data = plotdata[np.logical_and(plotdata.w1 > bin_low, plotdata.w1 <= bin_high)]
+    bin_vols.append(this_boxplot_data.shape[0])
     position = bin_low + (bin_high - bin_low) / 2
     if this_boxplot_data.shape[0] > 0:
-        plt.violinplot(this_boxplot_data.sopr, positions=[position], showmedians=True, showextrema=False, widths=0.05, bw_method=2e-2)
+        plt.violinplot(this_boxplot_data.sopr, positions=[position], showmedians=True, showextrema=False, widths=0.15, bw_method=2e-2)
+plt.xticks(rotation=-45, ha='left', rotation_mode='anchor')
+plt.xlabel("W1 distance from from base MDP")
+plt.ylabel("SOPR (lower is better)")
+plt.title("SOPR against Wasserstein MDP distance")
+plt.xticks(ticks = np.arange(0, 2.1, 2/10), rotation=-45, ha='left', rotation_mode='anchor')
+plt.tight_layout()
+plt.savefig("w1_vs_sopr_5_mdps.png", dpi=200)
 plt.show()
 
-plt.xticks(rotation=-45, ha='left', rotation_mode='anchor')
-plt.xlabel("W1 distance from training MDP")
-plt.ylabel("Episode Total Rewards")
-plt.title("Agent Returns vs W1 to new MDP, five-task aggregation")
-plt.tight_layout()
-# plt.savefig("w1_vs_performance_violinplot_5_tasks.png")
-plt.show()
+

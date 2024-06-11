@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from gymnasium.spaces import Box
 
@@ -35,10 +36,16 @@ task_pool = ['button-press-topdown-v2',
              'reach-wall-v2',
              'soccer-v2']
 
-task_pool_10 = ['coffee-button-v2', 'dial-turn-v2', 'door-unlock-v2',
-                'handle-press-side-v2', 'handle-press-v2',
-                'plate-slide-back-v2', 'plate-slide-v2', 'push-back-v2',
-                'reach-v2', 'reach-wall-v2']
+task_pool_10 = ['coffee-button-v2',
+                'dial-turn-v2',
+                'door-unlock-v2',
+                'handle-press-side-v2',
+                'handle-press-v2',
+                'plate-slide-back-v2',
+                'plate-slide-v2',
+                'push-back-v2',
+                'reach-v2',
+                'reach-wall-v2']
 
 
 # # # # # # # # # #
