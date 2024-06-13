@@ -3,7 +3,7 @@ from src.finite_mdps.torch_helpers import TorchBox
 import gymnasium as gym
 import pygame
 
-class GridWorldV1(gym.Env):
+class SimpleGridV1(gym.Env):
 
     def __init__(self, width, height, device, seed=0, render_mode=None, reward_func='manhattan'):
         super().__init__()
@@ -37,8 +37,7 @@ class GridWorldV1(gym.Env):
         self._action_map = {0: torch.tensor([ 0, -1], dtype=torch.int, device=self.device, requires_grad=False),
                             1: torch.tensor([ 1,  0], dtype=torch.int, device=self.device, requires_grad=False),
                             2: torch.tensor([ 0,  1], dtype=torch.int, device=self.device, requires_grad=False),
-                            3: torch.tensor([-1,  0], dtype=torch.int, device=self.device, requires_grad=False),
-                            4: torch.tensor([ 0,  0], dtype=torch.int, device=self.device, requires_grad=False)}
+                            3: torch.tensor([-1,  0], dtype=torch.int, device=self.device, requires_grad=False)}
 
         self._object_tensor_map = {0: torch.tensor([0], dtype=torch.int, device=self.device, requires_grad=False),
                                    1: torch.tensor([1], dtype=torch.int, device=self.device, requires_grad=False),
