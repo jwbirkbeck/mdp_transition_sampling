@@ -18,8 +18,7 @@ agent = DQNAgent(environment=env,
 rewards = []
 
 def tester():
-    for _ in range(250):
-        env.seed = _
+    for _ in range(1000):
         print(_)
         ep_reward, _ = agent.train_agent()
         rewards.append(ep_reward)
@@ -28,14 +27,18 @@ def tester():
 tester()
 
 plt.plot(rewards)
+plt.xlabel('Episode')
+plt.ylabel('Total reward')
+plt.title('DQN performance, SimpleGridV1')
+plt.tight_layout()
 plt.show()
 
-agent.environment.seed=2
+agent.environment.seed=0
 agent.environment.reset()
 agent.environment.render()
 
 env.seed = torch.randint(low=0, high=250, size=(1,)).item()
-agent.train_agent(train=True, render=True)
+agent.train_agent(train=False, render=True)
 
 """
 TODO: 

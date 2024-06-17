@@ -8,7 +8,7 @@ class SimpleGridV1(gym.Env):
 
     def __init__(self, width, height, device, seed=0, render_mode=None, reward_func='manhattan'):
         super().__init__()
-        self.metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 120}
+        self.metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 30}
         assert isinstance(width, int) and isinstance(height, int)
         assert width >= 10 and height >= 10
         assert isinstance(device, torch.device)
@@ -85,7 +85,6 @@ class SimpleGridV1(gym.Env):
         observation = self.grid.flatten()
 
         if torch.all(self._agent_pos == self._goal_pos).item():
-            reward = torch.tensor([1.0], dtype=torch.float, device=self.device, requires_grad=False)
             terminated = True
 
         info = {}
