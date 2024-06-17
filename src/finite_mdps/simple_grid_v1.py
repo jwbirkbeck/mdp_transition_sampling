@@ -2,12 +2,13 @@ import torch
 from src.finite_mdps.torch_helpers import TorchBox
 import gymnasium as gym
 import pygame
+from itertools import product
 
 class SimpleGridV1(gym.Env):
 
     def __init__(self, width, height, device, seed=0, render_mode=None, reward_func='manhattan'):
         super().__init__()
-        self.metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 60}
+        self.metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 120}
         assert isinstance(width, int) and isinstance(height, int)
         assert width >= 10 and height >= 10
         assert isinstance(device, torch.device)
@@ -32,7 +33,7 @@ class SimpleGridV1(gym.Env):
         low = torch.zeros(size=(self.width * self.height, ), dtype=torch.int, device=self.device, requires_grad=False)
         high = 3 * torch.ones(size=(self.width * self.height, ), dtype=torch.int, device=self.device, requires_grad=False)
         self.observation_space = TorchBox(low=low, high=high)
-        self.action_space = gym.spaces.Discrete(5) # north, east, south, west, nop
+        self.action_space = gym.spaces.Discrete(4) # north, east, south, west, nop
 
         self._action_map = {0: torch.tensor([ 0, -1], dtype=torch.int, device=self.device, requires_grad=False),
                             1: torch.tensor([ 1,  0], dtype=torch.int, device=self.device, requires_grad=False),
@@ -69,16 +70,25 @@ class SimpleGridV1(gym.Env):
     def step(self, action):
         assert self._timestep <= self._max_timestep, 'episode has terminated'
         next_state, reward = self._update_agent_pos(state=self.grid, action=action)
+        self._timestep += 1
+
+        terminated = False
+        truncated = False
+
+        if torch.all(self.grid == next_state).item():
+            reward -= 1.0
+
+        if self._timestep == self._max_timestep:
+            truncated = True
 
         self.grid = next_state
         observation = self.grid.flatten()
 
-        terminated = False
-        truncated = True if self._timestep >= self._max_timestep else False
+        if torch.all(self._agent_pos == self._goal_pos).item():
+            reward = torch.tensor([1.0], dtype=torch.float, device=self.device, requires_grad=False)
+            terminated = True
+
         info = {}
-
-        self._timestep += 1
-
         return observation, reward, terminated, truncated, info
 
     def render(self):
@@ -238,5 +248,36 @@ class SimpleGridV1(gym.Env):
             reward = torch.tensor([0.0], device=self.device, requires_grad=False)
         return reward
 
+    def get_all_transitions(self, render=False):
+        width_range = range(self.width)
+        height_range = range(self.height)
+        wall = 3
+        n_total_transitions = 4 * (self.width-2) * (self.height-2)
+        next_states_flat = -1.0 * torch.ones(size=(n_total_transitions, self.width * self.height))
+        rewards_flat = torch.ones(size=(n_total_transitions, 1))
+        # next_states_flat = torch.tensor([], device=self.device)
+        # rewards_flat = torch.tensor([], device=self.device)
+        transition_ind = 0
+        for row in width_range:
+            for col in height_range:
+                if self.grid[row, col] != wall:
+                    for action in self._action_map:
+                        self._set_state_for_transitions(row=row, col=col)
+                        if render:
+                            self.render()
+                        observation, reward, terminated, truncated, info = self.step(action=action)
+                        if render:
+                            self.render()
+                        self._timestep -= 1  # Undo the timestep iteration in self.step when getting transitions
+                        next_states_flat[transition_ind, :] = observation
+                        rewards_flat[transition_ind, :] = reward
+                        # next_states_flat = torch.cat((next_states_flat, observation.reshape(1, -1)), dim=0)
+                        # rewards_flat = torch.cat((rewards_flat, reward.reshape(1, -1)), dim=0)
+                        transition_ind += 1
+        return next_states_flat, rewards_flat
 
+    def _set_state_for_transitions(self, row, col):
+        self.grid[self._agent_pos[0], self._agent_pos[1]] = 0
+        self.grid[row, col] = 1
+        self._agent_pos = torch.tensor([row, col], dtype=torch.int, device=self.device, requires_grad=False)
 
