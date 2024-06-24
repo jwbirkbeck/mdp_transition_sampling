@@ -4,7 +4,7 @@ from src.finite_mdps.simple_grid_v1 import SimpleGridV1
 from src.dqn.dqn_agent import DQNAgent
 
 device = torch.device('cpu')
-env = SimpleGridV1(height=12, width=12, seed=0, device=device, render_mode='human')
+env = SimpleGridV1(height=16, width=16, seed=0, device=device, render_mode='human')
 
 agent = DQNAgent(environment=env,
                  alpha=1e-3,
@@ -18,9 +18,14 @@ agent = DQNAgent(environment=env,
 rewards = []
 
 def tester():
-    for _ in range(1000):
+    for _ in range(400):
+        # agent.environment.seed = _ % 5
+        # print(_)
+        # ep_reward, _ = agent.train_agent(train=True)
+        # rewards.append(ep_reward)
+        agent.environment.seed = 5
         print(_)
-        ep_reward, _ = agent.train_agent()
+        ep_reward, _ = agent.train_agent(train=False)
         rewards.append(ep_reward)
     print('done')
 
@@ -28,12 +33,15 @@ tester()
 
 plt.plot(rewards)
 plt.xlabel('Episode')
-plt.ylabel('Total reward')
+plt.ylim(-2000, 0)
+plt.ylabel('Episode total reward')
+plt.vlines(x=400, ymin=-2000, ymax=0, linestyles='dashed', color='grey', alpha=0.5)
 plt.title('DQN performance, SimpleGridV1')
 plt.tight_layout()
+plt.savefig('example_change_performance_drop.png')
 plt.show()
 
-agent.environment.seed=0
+agent.environment.seed=1
 agent.environment.reset()
 agent.environment.render()
 
