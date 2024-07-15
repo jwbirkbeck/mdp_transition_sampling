@@ -108,4 +108,4 @@ class DQNAgent(nn.Module):
 
     @torch.no_grad()
     def process_state(self, state_raw):
-        return state_raw.flatten()
+        return state_raw.to(torch.float)
