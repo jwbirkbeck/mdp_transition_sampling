@@ -222,6 +222,7 @@ plt.ylabel("SOPR (lower is better)")
 plt.title("SimpleGrid: SOPR vs W1 MDP distance")
 plt.xticks(ticks = np.arange(0, 12.5, 1))
 plt.tight_layout()
+plt.savefig("simplegrid_sopr.png", dpi=300)
 plt.show()
 
 bins = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
