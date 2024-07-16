@@ -203,8 +203,6 @@ plotdata.max_r[plotdata.evals > plotdata.max_r] = plotdata.evals[plotdata.evals 
 plotdata.sopr = (plotdata.max_r - plotdata.evals) / (plotdata.max_r - plotdata.min_r)
 _, bins = pd.qcut(plotdata.dists, q=16, retbins=True)
 
-
-
 fig, ax = plt.subplots(figsize=(8 / 1.2, 5 / 1.2))
 # plt.plot(x[order], y_sm[order], color='black', label='LOWESS', alpha=0.2)
 # plt.fill_between(x[order], y_sm[order] - 1.96*y_std[order], y_sm[order] + 1.96*y_std[order], alpha=0.15, label='LOWESS uncertainty')
@@ -229,8 +227,3 @@ bins = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
 plt.scatter(plotdata.dists, plotdata.sopr, s=3, alpha = 0.5)
 plt.show()
 
-# """
-# Pre-calculate optimal and minimal returns:
-# Optimal returns: Sample actions which step toward goal and then get reward.
-# Minimal returns: Head toward furthest edge corner
-# """

@@ -12,7 +12,6 @@ class RandomSampler:
         s_sample = self.state_space.sample()
         a_sample = self.action_space.sample()
         converged = True
-        # TODO: random sample from action space
         return s_sample, a_sample, converged
 
 
