@@ -37,7 +37,7 @@ config.num_mini_batches = 15 # with rollout of 5120, 160 mini_batch gives 32 sam
 config.ppo_ratio_clip = 0.2
 config.iteration_log_interval = 1
 config.gradient_clip = 5
-config.max_steps = 5000 # 10_240_000 # taken from the default args
+config.max_steps = 500 # 10_240_000 # taken from the default args
 config.evaluation_episodes = 10
 config.logger = None # get_logger(log_dir=config.log_dir, file_name='train-log')
 config.cl_requires_task_label = True
@@ -57,17 +57,15 @@ config.network_fn = lambda state_dim, action_dim, label_dim: GaussianActorCritic
             discrete_mask=False, num_tasks=num_tasks, new_task_mask=new_task_mask),
         num_tasks=num_tasks, new_task_mask=new_task_mask)
 
-# TODO: install tensorboardX for logging, then uncomment logging code and test it
-# TODO: test multi-cpu running
 agent = LLAgent(config)
 config.agent_name = agent.__class__.__name__
 tasks = agent.config.cl_tasks_info
 config.cl_num_learn_blocks = 1
 
-config.max_steps = 500 * 50 # 10_240_000 # taken from the default args
-steps, rewards = run_iterations_w_oracle(agent, tasks[0:2])
+config.max_steps = 500 * 250 # 10_240_000 # taken from the default args
+steps, rewards = run_iterations_w_oracle(agent, tasks[0:1])
 print("done")
 
 import matplotlib.pyplot as plt
-plt.plot(rewards)
+plt.plot(steps, rewards)
 plt.show()
