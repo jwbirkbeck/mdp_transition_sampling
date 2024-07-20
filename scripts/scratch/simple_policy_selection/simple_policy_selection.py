@@ -22,7 +22,7 @@ for task_a in task_pool:
 
         state_bounds = env_a.observation_space
         action_bounds = env_a.action_space
-        sampler = MDPDifferenceSampler(environment_a=env_a, environment_b=env_b,
+        sampler = MDPDifferenceSampler(env_a=env_a, env_b=env_b,
                                        state_space=state_bounds, action_space=action_bounds)
         dist = sampler.get_difference(n_states=25, n_transitions=5)
         pd_row = pd.DataFrame({'task_a': [task_a], 'task_b': [task_b], 'w1': [dist]})

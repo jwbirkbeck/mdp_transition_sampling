@@ -184,7 +184,7 @@ class SimpleGridV2(gym.Env):
 
         self._agent_pos = new_agent_pos
 
-        reward = self._get_reward(agent_pos=new_agent_pos, goal_pos = self._goal_pos)
+        reward = self._get_reward(agent_pos=new_agent_pos, goal_pos=self._goal_pos)
         if self.reward_scaling:
             reward = (reward - self.min_reward) / (self.max_reward - self.min_reward) - 1.0
         return next_grid, reward
@@ -314,3 +314,22 @@ class SimpleGridV2(gym.Env):
             pygame.quit()
             self._pygame_window = None
             self._pygame_clock = None
+
+    def get_manual_step(self, state, action):
+        self._timestep -= 1  # Avoid counting this as a valid step against the episode time limit
+        new_agent_pos = state[0:2, ]
+        # new_goal_pos = state[2:4, ]
+        self._agent_pos = torch.tensor(new_agent_pos, dtype=torch.int, device=self.device, requires_grad=False)
+        # self._goal_pos = torch.tensor(new_goal_pos, dtype=torch.int, device=self.device, requires_grad=False)
+        observation, reward, terminated, truncated, info = self.step(action=action.item())
+        return observation, reward, terminated, truncated, info
+
+    def compute_reward_wrap(self, states, actions):
+        rewards = []
+        for state, action in zip(states, actions):
+            _, reward, _, _, _ = self.get_manual_step(state=state, action=action)
+            rewards.append(reward)
+        return rewards
+
+    def sample_reward_function(self, n_samples):
+        return -1.0 * torch.rand(size=(n_samples, ), requires_grad=False)

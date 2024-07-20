@@ -1,4 +1,6 @@
+import gymnasium as gym
 import numpy as np
+import torch
 import ot
 
 
@@ -16,9 +18,11 @@ class RandomSampler:
 
 
 class MCCESampler:
-    def __init__(self, state_space, action_space, env_reward_function):
+    def __init__(self, state_space, action_space, env_reward_function, discrete):
         self.state_space = state_space
         self.action_space = action_space
+        # self.discrete = True if type(self.action_space) == gym.spaces.discrete.Discrete else False
+        self.discrete = discrete
         self.env_reward_function = env_reward_function
         self.max_iterations = 100
         self.mcce_sample_size = 40
@@ -27,10 +31,17 @@ class MCCESampler:
         self.initial_sigma_coefficient = 0.25
 
     def get_init_params(self, bounds):
-        half_range = (bounds.high - bounds.low) / 2.0
-        midpoint = bounds.high - half_range
-        mu = np.array([midpoint])
-        sigma = half_range * self.initial_sigma_coefficient
+        if not type(bounds) == gym.spaces.discrete.Discrete:
+            half_range = (bounds.high - bounds.low) / 2.0
+            midpoint = bounds.high - half_range
+            mu = np.array([midpoint])
+            sigma = half_range * self.initial_sigma_coefficient
+        else:
+            half_range = (bounds.n-1 - 0) / 2.0
+            midpoint = bounds.n-1 - half_range
+            mu = np.array([midpoint]).reshape(1, -1)
+            sigma = half_range * self.initial_sigma_coefficient
+            sigma = np.array([sigma]).reshape(1)
         return mu, sigma
 
     def sample(self, s_reward):
@@ -44,11 +55,19 @@ class MCCESampler:
         while not converged and iterations <= self.max_iterations:
             iterations += 1
             samples = np.random.normal(loc=mu, scale=sigma, size=(self.mcce_sample_size, mu.shape[1]))
-            samples = np.clip(samples,
-                              a_min=np.append(self.state_space.low, self.action_space.low),
-                              a_max=np.append(self.state_space.high, self.action_space.high))
+            if not self.discrete:
+                samples = np.clip(samples,
+                                  a_min=np.append(self.state_space.low, self.action_space.low),
+                                  a_max=np.append(self.state_space.high, self.action_space.high))
+            else:
+                samples = np.clip(samples,
+                                  a_min=np.append(self.state_space.low+1, 0),
+                                  a_max=np.append(self.state_space.high-2, self.action_space.n-1))
             states = samples[:, :state_length]
             actions = samples[:, state_length:]
+            if self.discrete:  # round from floats to ints so rewards can be calculated
+                states = states.round(0).astype(int)
+                actions = actions.round(0).astype(int)
             reward_error = np.abs(np.subtract(s_reward, self.env_reward_function(states=states, actions=actions)))
             elite_sample_inds = np.argpartition(-reward_error, -self.mcce_sample_size_elite)[
                                 -self.mcce_sample_size_elite:]
@@ -60,19 +79,26 @@ class MCCESampler:
         final_sample = np.random.normal(loc=mu, scale=sigma, size=(1, mu.shape[1]))
         final_state = final_sample[:, :state_length]
         final_action = final_sample[:, state_length:]
+        if self.discrete:
+            final_state = final_state.round(0).astype(int)
+            final_action = final_action.round(0).astype(int).item()
         return final_state, final_action, converged
 
 class MDPDifferenceSampler:
-    def __init__(self, environment_a, environment_b, state_space, action_space, method='mcce'):
-        self.environment_a = environment_a
-        self.environment_b = environment_b
+    def __init__(self, env_a, env_b, state_space, action_space, method='mcce'):
+        assert method in ['mcce', 'random']
+        self.environment_a = env_a
+        self.environment_b = env_b
         self.state_space = state_space
         self.action_space = action_space
+
+        self.discrete = True if type(self.action_space) == gym.spaces.discrete.Discrete else False
 
         self.method = method
         if self.method == 'mcce':
             self.sampler = MCCESampler(state_space=self.state_space, action_space=self.action_space,
-                                       env_reward_function=self.environment_a.compute_reward_wrap)
+                                       env_reward_function=self.environment_a.compute_reward_wrap,
+                                       discrete=self.discrete)
         elif self.method =='random':
             self.sampler = RandomSampler(state_space=self.state_space, action_space=self.action_space,
                                          env_reward_function=self.environment_a.compute_reward_wrap)
@@ -99,7 +125,10 @@ class MDPDifferenceSampler:
     def sample_states_and_actions(self, n_samples):
         s_rewards = self.sample_rewards(n_samples=n_samples)
         s_states = np.empty(shape=(n_samples, self.state_space.low.shape[0]))
-        s_actions = np.empty(shape=(n_samples, self.action_space.shape[0]))
+        if not self.discrete:
+            s_actions = np.empty(shape=(n_samples, self.action_space.shape[0]))
+        else:
+            s_actions = np.empty(shape=(n_samples, 1), dtype=int)
         states_converged = [None] * n_samples
         actions_converged = [None] * n_samples
         for ind in range(len(s_rewards)):

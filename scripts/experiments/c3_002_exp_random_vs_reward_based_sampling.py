@@ -33,13 +33,13 @@ for params in sampling_params:
                 state_bounds = bounded_state_space
                 action_bounds = env_a.action_space
 
-                reward_based_sampler = MDPDifferenceSampler(environment_a=env_a,
-                                                            environment_b=env_b,
+                reward_based_sampler = MDPDifferenceSampler(env_a=env_a,
+                                                            env_b=env_b,
                                                             state_space=state_bounds,
                                                             action_space=action_bounds,
                                                             method='mcce')
-                random_sampler = MDPDifferenceSampler(environment_a=env_a,
-                                                      environment_b=env_b,
+                random_sampler = MDPDifferenceSampler(env_a=env_a,
+                                                      env_b=env_b,
                                                       state_space=state_bounds,
                                                       action_space=action_bounds,
                                                       method='random')

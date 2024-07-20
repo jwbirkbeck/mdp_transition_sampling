@@ -30,8 +30,8 @@ def get_task_w1_dist(job_info):
     state_space = env_a.observation_space
     action_space = env_a.action_space
 
-    sampler = MDPDifferenceSampler(environment_a=env_a,
-                                   environment_b=env_b,
+    sampler = MDPDifferenceSampler(env_a=env_a,
+                                   env_b=env_b,
                                    state_space=state_space,
                                    action_space=action_space)
 
@@ -109,8 +109,8 @@ def get_w1_dists_ns(job_info):
         ns_dist.freeze()
         env_b.ns_dist = ns_dist
 
-        sampler = MDPDifferenceSampler(environment_a=env_a,
-                                       environment_b=env_b,
+        sampler = MDPDifferenceSampler(env_a=env_a,
+                                       env_b=env_b,
                                        state_space=state_space,
                                        action_space=action_space)
 

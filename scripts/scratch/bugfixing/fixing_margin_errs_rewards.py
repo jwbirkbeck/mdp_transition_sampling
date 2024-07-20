@@ -25,7 +25,7 @@ for rep in range(reps):
         state_bounds = bounded_state_space
         action_bounds = env_a.action_space
 
-        sampler = MDPDifferenceSampler(environment_a=env_a, environment_b=env_b,
+        sampler = MDPDifferenceSampler(env_a=env_a, env_b=env_b,
                                        state_space=state_bounds, action_space=action_bounds)
         dist = sampler.get_difference(n_states=25, n_transitions=5)
         pd_row = pd.DataFrame({'env_a': [task],

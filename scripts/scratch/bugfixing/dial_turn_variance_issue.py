@@ -15,7 +15,7 @@ env_b.reset()
 action_bounds = env_a.action_space
 
 dists = []
-sampler = MDPDifferenceSampler(environment_a=env_a, environment_b=env_b,
+sampler = MDPDifferenceSampler(env_a=env_a, env_b=env_b,
                                state_space=bounded_state_space, action_space=action_bounds)
 
 for _ in range(10):

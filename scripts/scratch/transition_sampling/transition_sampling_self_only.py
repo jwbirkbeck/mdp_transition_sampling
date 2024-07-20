@@ -20,7 +20,7 @@ for rep in range(reps):
         state_bounds = bounded_state_space
         action_bounds = env_a.action_space
 
-        sampler = MDPDifferenceSampler(environment_a=env_a, environment_b=env_b,
+        sampler = MDPDifferenceSampler(env_a=env_a, env_b=env_b,
                                        state_space=state_bounds, action_space=action_bounds)
         pd_row = pd.DataFrame({'env_a': [exp_task_pool[ind]],
                                'env_b': [exp_task_pool[ind]],

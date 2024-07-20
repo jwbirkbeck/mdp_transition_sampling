@@ -36,8 +36,8 @@ nonstat_eval_reps = 10
 # state_space = env_a.observation_space
 # action_space = env_a.action_space
 #
-# sampler = MDPDifferenceSampler(environment_a=env_a,
-#                                environment_b=env_b,
+# sampler = MDPDifferenceSampler(env_a=env_a,
+#                                env_b=env_b,
 #                                state_space=state_space,
 #                                action_space=action_space)
 #
@@ -57,8 +57,8 @@ for task in task_selection:
     state_space = env_a.observation_space
     action_space = env_a.action_space
 
-    sampler = MDPDifferenceSampler(environment_a=env_a,
-                                   environment_b=env_b,
+    sampler = MDPDifferenceSampler(env_a=env_a,
+                                   env_b=env_b,
                                    state_space=state_space,
                                    action_space=action_space)
 

@@ -35,7 +35,7 @@ def mp_calculate_distances(job_config):
 
         env_b.ns_dist.set_sequence_ind(ind=ns_test_ind)
 
-        sampler = MDPDifferenceSampler(environment_a=env_a, environment_b=env_b,
+        sampler = MDPDifferenceSampler(env_a=env_a, env_b=env_b,
                                        state_space=env_a.observation_space, action_space=env_a.action_space)
 
         dist = sampler.get_difference(n_states=50, n_transitions=1)

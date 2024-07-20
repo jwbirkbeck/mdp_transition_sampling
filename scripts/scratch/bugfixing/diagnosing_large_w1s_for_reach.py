@@ -41,8 +41,8 @@ env_b.ns_dist = ns_dist
 
 ns_dist.set_sequence_ind(ind=50000)
 
-sampler = MDPDifferenceSampler(environment_a=env_a,
-                               environment_b=env_b,
+sampler = MDPDifferenceSampler(env_a=env_a,
+                               env_b=env_b,
                                state_space=state_space,
                                action_space=action_space)
 

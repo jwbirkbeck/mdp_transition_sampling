@@ -64,8 +64,8 @@ def calc_w1_of_nonstat_dist(dist, n_states, n_transitions, n_reps):
         # Calc wasserstein distance between MDPs with different
         state_space = env_a.observation_space
         action_space = env_a.action_space
-        sampler = MDPDifferenceSampler(environment_a=env_a,
-                                       environment_b=env_b,
+        sampler = MDPDifferenceSampler(env_a=env_a,
+                                       env_b=env_b,
                                        state_space=state_space,
                                        action_space=action_space)
         w1s = []
