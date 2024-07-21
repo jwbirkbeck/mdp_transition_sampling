@@ -1,4 +1,5 @@
 import torch
+import pickle
 import glob, os, sys
 import numpy as np
 import pandas as pd
@@ -144,16 +145,15 @@ base_env = MetaWorldWrapper(task_name=task_pool_10[0], render_mode=None)  # task
 for cluster_ind, cluster_size in enumerate([2, 4, 6, 8, 10]):
     lpr_agents.append(SimplePolicySelector(env=base_env, method='bandit', device=device, task_names=task_pool_10, n_policies=cluster_size))
 
-    km = kmedoids.KMedoids(cluster_size, method='fasterpam')
-    c = km.fit(dist_matrix)
-    clusters = c.labels_
+    with open(os.path.join(results_dir, f'cluster_info_{cluster_size}.pkl'), 'rb') as file:
+        cluster_info = pickle.load(file)
 
-    mapping = np.array([task_pool_10, clusters], dtype='object').transpose()
-    wlpr_agents.append(SimplePolicySelector(env=base_env, method='precomputed', device=device, task_policy_mapping=mapping))
+    wlpr_agents.append(SimplePolicySelector(env=base_env, method='precomputed', device=device,
+                                            task_policy_mapping=cluster_info['mapping']))
 
     wlpr2_agent = SimplePolicySelector(env=base_env, method='bandit', device=device, task_names=task_pool_10, n_policies=cluster_size)
     for ind, row in enumerate(wlpr2_agent.task_policy_mapping):
-        row[clusters[ind]] = 1.0
+        row[cluster_info['clusters'][ind]] = 1.0
     wlpr2_agents.append(wlpr2_agent)
 
     lpg_policy = MLPLPGFTW(lpg_e[cluster_ind].spec, hidden_sizes=(32, 32), k=1, max_k=cluster_size)
