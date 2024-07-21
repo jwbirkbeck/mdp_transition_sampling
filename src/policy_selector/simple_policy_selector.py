@@ -3,7 +3,7 @@ import numpy as np
 from src.policy_selector.sac_policy import SACPolicy
 
 class SimplePolicySelector:
-    def __init__(self, env, method, device, task_names=None, n_policies = None, task_policy_mapping=None):
+    def __init__(self, env, method, device, task_names=None, n_policies=None, task_policy_mapping=None):
         assert method in ['precomputed', 'bandit'], 'undefined method'
         if method == 'precomputed':
             assert task_policy_mapping is not None, "task_policy_mapping must be provided for method 'precomputed'"
