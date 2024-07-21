@@ -62,6 +62,7 @@ config.agent_name = agent.__class__.__name__
 tasks = agent.config.cl_tasks_info
 config.cl_num_learn_blocks = 1
 
+
 config.max_steps = 500 * 1 # 10_240_000 # taken from the default args
 # steps, rewards = run_iterations_w_oracle(agent, tasks[0:1])
 # print("done")
