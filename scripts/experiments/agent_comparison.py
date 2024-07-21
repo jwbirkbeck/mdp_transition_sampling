@@ -211,6 +211,7 @@ for episode_num in range(n_training_eps):
         lpg_stats = lpg_agents[cluster_ind].train_step(**lpg_args)
 
         pd_row = pd.DataFrame({'episode': [episode_num],
+                               'cluster_size': [cluster_size],
                                'task': [curr_task_name],
                                'lpr_reward': [lpr_ep_rew],
                                'wlpr_reward': [wlpr_ep_rew],
@@ -218,4 +219,4 @@ for episode_num in range(n_training_eps):
                                'mask_reward': mask_ep_rew,
                                'lpg_reward': [lpg_stats[0]]})
         pd_results = pd.concat((pd_results, pd_row))
-        pd_results.to_csv(os.path.join(results_dir, f'results_{run_index}.csv'))
+        pd_results.to_csv(os.path.join(results_dir, f'results_{run_index}.csv'), index=False)
