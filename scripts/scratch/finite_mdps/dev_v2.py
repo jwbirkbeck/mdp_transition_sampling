@@ -77,9 +77,9 @@ env = SimpleGridV2(size=size, seed=0, device=device, render_mode='human')
 # results_dict = {'dists': dists,
 #                 'evals': evals}
 #
-# pickle.dump(results_dict, open('results_dict.pkl', 'wb'))
+# pickle.dump(results_dict, open('simplegrid_w1_vs_returns.pkl', 'wb'))
 
-with open('results_dict.pkl', 'rb') as file:
+with open('../../local_experiments/simplegrid_w1_vs_returns.pkl', 'rb') as file:
     results_dict = pickle.load(file)
     dists = results_dict['dists']
     evals = results_dict['evals']
@@ -218,7 +218,7 @@ for ind in range(len(bins) - 1):
     position = bin_low + (bin_high - bin_low) / 2
     if this_boxplot_data.shape[0] > 0:
         plt.violinplot(this_boxplot_data.sopr, positions=[position], showmedians=True, showextrema=False, widths=0.75, bw_method=0.125)
-plt.xlabel("W1 distance from from base MDP")
+plt.xlabel("W1 distance from base MDP")
 plt.ylabel("SOPR (lower is better)")
 plt.title("SimpleGrid: SOPR vs W1 MDP distance")
 plt.xticks(ticks = np.arange(0, 12.5, 1))

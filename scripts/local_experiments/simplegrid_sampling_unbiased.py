@@ -6,7 +6,7 @@ import pandas as pd
 import ot
 from src.finite_mdps.simple_grid_v2 import SimpleGridV2
 from src.sampler.samplers import MDPDifferenceSampler
-
+import pickle
 
 def get_true_distance(env_a, env_b):
     next_states_a, rewards_a = env_a.get_all_transitions(render=False)
@@ -52,22 +52,6 @@ print("done")
 
 dists = {'true': true_distance, 'sampled': sampled_distance}
 
-import pickle
-with open('dists_for_bias_check.pkl', 'wb') as file:
+
+with open('simplegrid_dists_from_samples.pkl', 'wb') as file:
     pickle.dump(dists, file)
-
-plt.plot([a - b for a, b in zip(true_distance, sampled_distance)])
-plt.show()
-
-np.mean(np.array(true_distance) - np.array(sampled_distance))
-np.std(np.array(true_distance) - np.array(sampled_distance))
-
-scipy.stats.ttest_rel(true_distance, sampled_distance)
-
-np.mean(np.array(true_distance))
-np.mean(np.array(sampled_distance))
-
-np.std(np.array(true_distance))
-np.std(np.array(sampled_distance))
-
-plt.scatter(true_distance, sampled_distance, s=3, alpha=0.5)
