@@ -32,7 +32,7 @@ sampler = MDPDifferenceSampler(env_a=env_a, env_b=env_b,
 
 true_distance = []
 sampled_distance = []
-for seed in range(100):
+for seed in range(5000):
     print(seed)
     env_a = SimpleGridV2(size=size, seed=0, device=device, render_mode='human')
     env_b = SimpleGridV2(size=size, seed=seed, device=device, render_mode='human')
@@ -50,6 +50,12 @@ for seed in range(100):
     sampled_distance.append(sampler.get_difference(n_states=15, n_transitions=1))
 print("done")
 
+dists = {'true': true_distance, 'sampled': sampled_distance}
+
+import pickle
+with open('dists_for_bias_check.pkl', 'wb') as file:
+    pickle.dump(dists, file)
+
 plt.plot([a - b for a, b in zip(true_distance, sampled_distance)])
 plt.show()
 
@@ -63,3 +69,5 @@ np.mean(np.array(sampled_distance))
 
 np.std(np.array(true_distance))
 np.std(np.array(sampled_distance))
+
+plt.scatter(true_distance, sampled_distance, s=3, alpha=0.5)
