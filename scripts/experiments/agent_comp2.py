@@ -92,7 +92,7 @@ mask_config.network_fn = lambda state_dim, action_dim, label_dim: GaussianActorC
     phi_body=DummyBody_CL(state_dim, task_label_dim=label_dim),
     actor_body=FCBody_SS(state_dim + label_dim, hidden_units=(128, 128), gate=torch.tanh, discrete_mask=False,
                          num_tasks=mask_num_tasks, new_task_mask=mask_new_task_mask),
-    critic_body=FCBody_SS(state_dim + label_dim, hidden_units=(128, 128), gate=torch.tanh,discrete_mask=False,
+    critic_body=FCBody_SS(state_dim + label_dim, hidden_units=(128, 128), gate=torch.tanh, discrete_mask=False,
                           num_tasks=mask_num_tasks, new_task_mask=mask_new_task_mask),
     num_tasks=mask_num_tasks, new_task_mask=mask_new_task_mask)
 
@@ -132,7 +132,8 @@ lpg_baseline = {}
 lpg_task_order = np.arange(lpg_num_tasks)
 for task_id in range(lpg_num_tasks):
     lpg_e[task_id] = lpg_e_unshuffled[lpg_task_order[task_id]]
-    lpg_baseline[task_id] = MLPBaseline(lpg_e[task_id].spec, reg_coef=1e-3, batch_size=64, epochs=1, learn_rate=1e-3, use_gpu=False)
+    lpg_baseline[task_id] = MLPBaseline(lpg_e[task_id].spec, reg_coef=1e-3, batch_size=64, epochs=1, learn_rate=1e-3,
+                                        use_gpu=False)
 
 # # # # #
 # agent initialisations
@@ -142,8 +143,9 @@ wlpr_agents = []
 wlpr2_agents = []
 lpg_agents = []
 base_env = MetaWorldWrapper(task_name=task_pool_10[0], render_mode=None)  # tasks randomly change during experiment
-for cluster_ind, cluster_size in enumerate([2, 4, 6, 8, 10]):
-    lpr_agents.append(SimplePolicySelector(env=base_env, method='bandit', device=device, task_names=task_pool_10, n_policies=cluster_size))
+for cluster_ind, cluster_size in enumerate([6]):
+    lpr_agents.append(SimplePolicySelector(env=base_env, method='bandit', device=device, task_names=task_pool_10,
+                                           n_policies=cluster_size))
 
     with open(os.path.join(results_dir, f'cluster_info_{cluster_size}.pkl'), 'rb') as file:
         cluster_info = pickle.load(file)
@@ -151,7 +153,8 @@ for cluster_ind, cluster_size in enumerate([2, 4, 6, 8, 10]):
     wlpr_agents.append(SimplePolicySelector(env=base_env, method='precomputed', device=device,
                                             task_policy_mapping=cluster_info['mapping']))
 
-    wlpr2_agent = SimplePolicySelector(env=base_env, method='bandit', device=device, task_names=task_pool_10, n_policies=cluster_size)
+    wlpr2_agent = SimplePolicySelector(env=base_env, method='bandit', device=device, task_names=task_pool_10,
+                                       n_policies=cluster_size)
     for ind, row in enumerate(wlpr2_agent.task_policy_mapping):
         row[cluster_info['clusters'][ind]] = 1.0
     wlpr2_agents.append(wlpr2_agent)
@@ -184,13 +187,13 @@ for episode_num in range(n_training_eps):
         curr_task_name = np.random.choice(task_pool_10)
         curr_task_ind = task_pool_10.index(curr_task_name)
         lpg_agent.set_task(task_id=curr_task_ind)
-        for cluster_ind, _ in enumerate([2, 4, 6, 8, 10]):
+        for cluster_ind, _ in enumerate([6]):
             lpr_agents[cluster_ind].env.change_task(task_name=curr_task_name)
             wlpr_agents[cluster_ind].env.change_task(task_name=curr_task_name)
             wlpr2_agents[cluster_ind].env.change_task(task_name=curr_task_name)
             lpg_agents[cluster_ind].set_task(task_id=curr_task_ind)
 
-    for cluster_ind, cluster_size in enumerate([2, 4, 6, 8, 10]):
+    for cluster_ind, cluster_size in enumerate([6]):
         # # #
         # Lifetime Policy Reuse, Modified Lifetime Policy Reuse
         # # #
@@ -207,7 +210,8 @@ for episode_num in range(n_training_eps):
         # Lifelong policy gradient learning for faster training without forgetting
         # # #
 
-        lpg_args = dict(N=1, sample_mode='trajectories', gamma=0.995, gae_lambda=0.97, num_cpu=1, env_name=curr_task_name)
+        lpg_args = dict(N=1, sample_mode='trajectories', gamma=0.995, gae_lambda=0.97, num_cpu=1,
+                        env_name=curr_task_name)
         lpg_stats = lpg_agents[cluster_ind].train_step(**lpg_args)
 
         pd_row = pd.DataFrame({'episode': [episode_num],
@@ -218,6 +222,6 @@ for episode_num in range(n_training_eps):
                                'wlpr2_reward': [wlpr2_ep_rew],
                                'mask_reward': mask_ep_rew,
                                'lpg_reward': [lpg_stats[0]]})
-        
+
         pd_results = pd.concat((pd_results, pd_row))
         pd_results.to_csv(os.path.join(results_dir, f'results_{run_index}.csv'), index=False)

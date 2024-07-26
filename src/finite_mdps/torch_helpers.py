@@ -9,7 +9,11 @@ class TorchBox:
         self.shape = low.shape
 
     def sample(self):
-        raise NotImplementedError
+        if self.low.type() == 'torch.IntTensor':
+            return torch.randint(low=self.low[0]+1, high=self.high[0]-1, size=self.shape)
+        else:
+            raise NotImplementedError
+
 
     def contains(self):
         raise NotImplementedError

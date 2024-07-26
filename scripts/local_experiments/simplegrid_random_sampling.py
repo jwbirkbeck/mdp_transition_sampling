@@ -27,9 +27,6 @@ env_b = SimpleGridV2(size=size, seed=2, device=device, render_mode='human')
 state_space = env_a.observation_space
 action_space = env_a.action_space
 
-sampler = MDPDifferenceSampler(env_a=env_a, env_b=env_b,
-                               state_space=state_space, action_space=action_space, method='mcce')
-
 true_distance = []
 sampled_distance = []
 for seed in range(5000):
@@ -41,7 +38,7 @@ for seed in range(5000):
     action_space = env_a.action_space
 
     sampler = MDPDifferenceSampler(env_a=env_a, env_b=env_b,
-                                   state_space=state_space, action_space=action_space, method='mcce')
+                                   state_space=state_space, action_space=action_space, method='random')
 
     true_distance.append(get_true_distance(env_a, env_b))
 
@@ -53,5 +50,5 @@ print("done")
 dists = {'true': true_distance, 'sampled': sampled_distance}
 
 
-with open('simplegrid_dists_from_samples.pkl', 'wb') as file:
+with open('simplegrid_random_sampling.pkl', 'wb') as file:
     pickle.dump(dists, file)

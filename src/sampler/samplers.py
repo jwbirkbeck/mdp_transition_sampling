@@ -128,6 +128,7 @@ class MDPDifferenceSampler:
         if not self.discrete:
             s_actions = np.empty(shape=(n_samples, self.action_space.shape[0]))
         else:
+            s_states = s_states.astype(int)
             s_actions = np.empty(shape=(n_samples, 1), dtype=int)
         states_converged = [None] * n_samples
         actions_converged = [None] * n_samples
@@ -150,6 +151,8 @@ class MDPDifferenceSampler:
         assert mdp in ('a', 'b')
         env = self.environment_a if mdp == 'a' else self.environment_b
         next_states = np.empty(shape=(n_transitions, state.shape[0]))
+        if self.discrete:
+            next_states = next_states.astype(int)
         rewards = np.empty(shape=(n_transitions, 1))
         for ind in range(n_transitions):
             env.reset()
