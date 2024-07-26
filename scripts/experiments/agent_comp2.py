@@ -40,8 +40,8 @@ from src.lpg_ftw.mjrl.utils.gym_env import GymEnv, EnvSpec
 from src.lpg_ftw.mjrl.samplers.base_sampler import do_rollout
 import src.lpg_ftw.mjrl.utils.process_samples as process_samples
 
-results_dir = os.path.join(results_path_iridis, 'agent_comparison')
-model_dir = os.path.join(model_path_iridis, 'agent_comparison')
+results_dir = os.path.join(results_path_iridis, 'agent_comp2')
+model_dir = os.path.join(model_path_iridis, 'agent_comp2')
 assert len(sys.argv) == 2
 assert sys.argv[1].isdigit(), 'python file index argument must be integer value'
 run_index = int(sys.argv[1])
