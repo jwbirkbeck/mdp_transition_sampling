@@ -10,7 +10,6 @@ from src.utils.filepaths import *
 # # #
 # Lifetime Policy Reuse, Modified Lifetime Policy Reuse
 # # #
-import kmedoids
 from src.policy_selector.simple_policy_selector import SimplePolicySelector
 
 # # #

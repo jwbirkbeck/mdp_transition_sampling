@@ -10,7 +10,6 @@ from src.utils.filepaths import *
 # # #
 # Lifetime Policy Reuse, Modified Lifetime Policy Reuse
 # # #
-import kmedoids
 from src.policy_selector.simple_policy_selector import SimplePolicySelector
 
 # # #
@@ -40,8 +39,8 @@ from src.lpg_ftw.mjrl.utils.gym_env import GymEnv, EnvSpec
 from src.lpg_ftw.mjrl.samplers.base_sampler import do_rollout
 import src.lpg_ftw.mjrl.utils.process_samples as process_samples
 
-results_dir = os.path.join(results_path_iridis, 'agent_comp2')
-model_dir = os.path.join(model_path_iridis, 'agent_comp2')
+results_dir = os.path.join(results_path_iridis, 'agent_comp3')
+model_dir = os.path.join(model_path_iridis, 'agent_comp3')
 assert len(sys.argv) == 2
 assert sys.argv[1].isdigit(), 'python file index argument must be integer value'
 run_index = int(sys.argv[1])
