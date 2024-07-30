@@ -17,12 +17,13 @@ for filename in all_filenames:
     results = pd.concat((results, tmp))
 results = results.reset_index()
 
-# Note that the masking approach does not use cluster size, unlike all other runs
-results.groupby('cluster_size')[['lpr_reward', 'wlpr_reward', 'wlpr2_reward', 'mask_reward', 'lpg_reward']].mean()
+minmax_epi = results.groupby('run')['episode'].max().min()
+n_steps = minmax_epi * 500
 
-plotdata = results.query('cluster_size == 6')
-sum(plotdata.lpr_reward) / plotdata.shape[0]
-sum(plotdata.wlpr_reward) / plotdata.shape[0]
-sum(plotdata.wlpr2_reward) / plotdata.shape[0]
-sum(plotdata.mask_reward) / plotdata.shape[0]
-sum(plotdata.lpg_reward) / plotdata.shape[0]
+results2 = results.query(f"episode <={minmax_epi}")
+# Note that the masking approach does not use cluster size, unlike all other runs
+results2.groupby(['cluster_size','task'])[['lpr_reward', 'wlpr_reward', 'wlpr2_reward', 'mask_reward', 'lpg_reward']].mean()
+
+results2.groupby('cluster_size')[['lpr_reward', 'wlpr_reward', 'wlpr2_reward', 'mask_reward', 'lpg_reward']].std()
+
+results2.groupby('run')['episode'].max().min()
