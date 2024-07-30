@@ -28,7 +28,7 @@ results2 = results2.drop(['n_states', 'n_transitions'], axis=1)
 dist_matrix = results2.sort_values(by=['env_a', 'env_b']).groupby(['env_a', 'env_b']).median().reset_index().pivot(index='env_a', columns='env_b', values='dist')
 dist_matrix = np.array(dist_matrix).tolist()
 
-n_clusters = 3
+n_clusters = 6
 km = kmedoids.KMedoids(n_clusters, method='fasterpam')
 c = km.fit(dist_matrix)
 print("Loss is:", c.inertia_)
@@ -38,7 +38,7 @@ clusters = c.labels_
 device = torch.device('cpu')
 mapping = np.array([task_pool_10, clusters], dtype='object').transpose()
 env = MetaWorldWrapper(task_name=task_pool_10[0]) # starts at the first task, but probabilistically changes during experiment
-policy_selector = SimplePolicySelector(env=env, method='bandit', device=device, task_names=task_pool_10, n_policies=3)
+policy_selector = SimplePolicySelector(env=env, method='bandit', device=device, task_names=task_pool_10, n_policies=6)
 for ind, row in enumerate(policy_selector.task_policy_mapping):
     row[clusters[ind]] = 1.0
 

@@ -8,7 +8,7 @@ import os, glob, sys, re
 from src.utils.filepaths import results_path_local
 
 
-results_dir = os.path.join(results_path_local, 'agent_comparison/')
+results_dir = os.path.join(results_path_local, 'agent_comp2/')
 all_filenames = glob.glob(results_dir + "results_[0-9]*.csv")
 results = pd.DataFrame()
 for filename in all_filenames:
@@ -17,12 +17,14 @@ for filename in all_filenames:
     results = pd.concat((results, tmp))
 results = results.reset_index()
 
-# Note that the masking approach does not use cluster size, unlike all other runs
+
 results.groupby('cluster_size')[['lpr_reward', 'wlpr_reward', 'wlpr2_reward', 'mask_reward', 'lpg_reward']].mean()
 
-plotdata = results.query('cluster_size == 6')
-sum(plotdata.lpr_reward) / plotdata.shape[0]
-sum(plotdata.wlpr_reward) / plotdata.shape[0]
-sum(plotdata.wlpr2_reward) / plotdata.shape[0]
-sum(plotdata.mask_reward) / plotdata.shape[0]
-sum(plotdata.lpg_reward) / plotdata.shape[0]
+
+
+# plotdata = results.query('cluster_size == 6')
+# sum(plotdata.lpr_reward) / plotdata.shape[0]
+# sum(plotdata.wlpr_reward) / plotdata.shape[0]
+# sum(plotdata.wlpr2_reward) / plotdata.shape[0]
+# sum(plotdata.mask_reward) / plotdata.shape[0]
+# sum(plotdata.lpg_reward) / plotdata.shape[0]
