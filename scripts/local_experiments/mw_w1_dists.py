@@ -53,3 +53,4 @@ print('done')
 
 with open('mw_w1_dists.pkl', 'wb') as file:
     pickle.dump(w1_dists, file)
+
