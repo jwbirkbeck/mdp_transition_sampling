@@ -124,7 +124,6 @@ plt.xticks(ticks = np.arange(0, 12.5, 1))
 plt.tight_layout()
 plt.plot(sg_spline_xs, sg_spline_ys, color='black')
 plt.show()
-
 bins = np.arange(0, 1.05, 0.1)
 bin_vols = []
 for ind in range(len(bins) - 1):
