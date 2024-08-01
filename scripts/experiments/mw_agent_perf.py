@@ -8,8 +8,8 @@ from src.utils.consts import task_pool_10, ns_test_inds
 from src.utils.funcs import get_standard_ns_dist
 from src.utils.filepaths import *
 
-results_dir = os.path.join(results_path_iridis, 'mw_train_agents')
-model_dir = os.path.join(model_path_iridis, 'mw_train_agents')
+results_dir = os.path.join(results_path_iridis, 'mw_agent_perf')
+model_dir = os.path.join(model_path_iridis, 'mw_agent_perf')
 
 assert len(sys.argv) == 2
 assert sys.argv[1].isdigit(), 'python file index argument must be integer value'
