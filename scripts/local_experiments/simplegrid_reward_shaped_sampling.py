@@ -22,7 +22,7 @@ def get_true_distance(env_a, env_b):
 device = torch.device('cpu')
 size = 20
 env_a = SimpleGridV2(size=size, seed=0, device=device, render_mode='human')
-env_b = SimpleGridV2(size=size, seed=2, device=device, render_mode='human')
+env_b = SimpleGridV2(size=size, seed=0, device=device, render_mode='human')
 
 state_space = env_a.observation_space
 action_space = env_a.action_space

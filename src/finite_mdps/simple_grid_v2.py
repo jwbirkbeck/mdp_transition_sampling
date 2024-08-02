@@ -42,6 +42,9 @@ class SimpleGridV2(gym.Env):
         self.windy = False
         self.wind_prob = torch.tensor([0.0], device=self.device, requires_grad=False)
 
+        self.walls_around_agent = False
+        self.vertical_wall = False
+
         low = torch.zeros(size=(4, ), dtype=torch.int, device=self.device, requires_grad=False)
         high = size * torch.ones(size=(4, ), dtype=torch.int, device=self.device, requires_grad=False)
         self.observation_space = TorchBox(low=low, high=high)
@@ -129,6 +132,10 @@ class SimpleGridV2(gym.Env):
         self._reset_rng(seed=self.seed)
         self._initialise()
         self._timestep = 0
+        if self.walls_around_agent:
+            self._add_walls_around_agent()
+        if self.vertical_wall:
+            self._add_vertical_wall()
         return self._get_obs(), {}
 
     def _reset_rng(self, seed=None):
@@ -239,6 +246,39 @@ class SimpleGridV2(gym.Env):
         walls = (grid == 3)
         wall_indices = walls.nonzero().tolist()
         return wall_indices
+
+    def _add_walls_around_agent(self):
+        # constructs a 3x3 grid around the agent position
+        left_wall_x = self._agent_pos[0] - 2
+        right_wall_x = self._agent_pos[0] + 2
+        top_wall_y = self._agent_pos[1] - 2
+        bottom_wall_y = self._agent_pos[1] + 2
+
+        # left wall:
+        if left_wall_x > 0 and left_wall_x < self.size:
+            for y in range(top_wall_y, bottom_wall_y+1):
+                if y > 0 and y < self.size:
+                    self.grid[left_wall_x, y] = self._object_map['wall']
+        # right wall
+        if right_wall_x > 0 and right_wall_x < self.size:
+            for y in range(top_wall_y, bottom_wall_y+1):
+                if y > 0 and y < self.size:
+                    self.grid[right_wall_x, y] = self._object_map['wall']
+        # top wall
+        if top_wall_y > 0 and top_wall_y < self.size:
+            for x in range(left_wall_x, right_wall_x + 1):
+                if x > 0 and x < self.size:
+                    self.grid[x, top_wall_y] = self._object_map['wall']
+        # bottom wall
+        if bottom_wall_y > 0 and bottom_wall_y < self.size:
+            for x in range(left_wall_x, right_wall_x + 1):
+                if x > 0 and x < self.size:
+                    self.grid[x, bottom_wall_y] = self._object_map['wall']
+
+    def _add_vertical_wall(self):
+        x = 10
+        for y in range(2, self.size):
+            self.grid[x, y] = self._object_map['wall']
 
     def _set_state_for_transitions(self, row, col):
         self.grid[self._goal_pos[0], self._goal_pos[1]] = self._object_map['goal']

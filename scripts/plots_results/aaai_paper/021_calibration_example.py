@@ -87,7 +87,7 @@ sg_plotdata.loc[sg_plotdata.evals > sg_plotdata.max_r, 'max_r'] = sg_plotdata.ev
 sg_plotdata['sopr'] = (sg_plotdata.max_r - sg_plotdata.evals) / (sg_plotdata.max_r - sg_plotdata.min_r)
 
 
-def fit_spline(x, y, bins, k=1):
+def fit_spline(x, y, bins, k=2, s=0.005):
     spline_x = []
     spline_y = []
     for ind in range(len(bins) - 1):
@@ -96,19 +96,19 @@ def fit_spline(x, y, bins, k=1):
         this_y = y[np.logical_and(x >= bin_low, x < bin_high)]
         spline_x.append(bin_low + (bin_high - bin_low) / 2)
         spline_y.append(np.median(this_y))
-    t, c, k = scipy.interpolate.splrep(spline_x, spline_y, k=k)
+    t, c, k = scipy.interpolate.splrep(spline_x, spline_y, k=k, s=s)
     spline = scipy.interpolate.BSpline(t, c, k)
     return spline
 
-sg_spline = fit_spline(x=sg_plotdata.w1, y=sg_plotdata.sopr, bins=list(range(13)), k=1)
 
+
+bins = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+sg_spline = fit_spline(x=sg_plotdata.w1, y=sg_plotdata.sopr, bins=bins)
 sg_spline_xs = np.linspace(0, 12, 100)
 sg_spline_ys = sg_spline(sg_spline_xs)
 sg_plotdata['adj_dists'] = sg_spline(sg_plotdata.w1)
-
-bins = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
-fig, ax = plt.subplots(figsize=(8 / 1.2, 5 / 1.2))
 bin_vols = []
+plt.plot(sg_spline_xs, sg_spline_ys, color='black', alpha=0.3, label='Calibration spline', linestyle='dashed')
 for ind in range(len(bins) - 1):
     bin_low = bins[ind]
     bin_high = bins[ind + 1]
@@ -121,9 +121,15 @@ for ind in range(len(bins) - 1):
 # plt.ylabel("SOPR (lower is better)")
 # plt.title("SimpleGrid: SOPR vs W1 MDP distance")
 plt.xticks(ticks = np.arange(0, 12.5, 1))
+plt.yticks(ticks = np.arange(0, 1.05, 0.1))
+plt.xlabel('W1 distance from base MDP')
+plt.ylabel('SOPR (lower is better)')
+plt.title('W1-SOPR B-spline calibration curve, SimpleGrid')
+plt.legend()
 plt.tight_layout()
-plt.plot(sg_spline_xs, sg_spline_ys, color='black')
+plt.savefig('020_simplegrid_calibration.png', dpi=300)
 plt.show()
+
 bins = np.arange(0, 1.05, 0.1)
 bin_vols = []
 for ind in range(len(bins) - 1):
@@ -136,9 +142,11 @@ for ind in range(len(bins) - 1):
         plt.violinplot(this_boxplot_data.sopr, positions=[position], showmedians=True, showextrema=False, widths=0.05, bw_method=0.125)
 plt.xlabel("Calibrated W1 distance from base MDP")
 plt.ylabel("SOPR (lower is better)")
-plt.title("SimpleGrid: SOPR vs Calibrated W1 distance")
+plt.title("Calibrated W1 vs SOPR, SimpleGrid")
 plt.xticks(ticks = np.arange(0, 1.05, 0.1))
+plt.yticks(ticks = np.arange(0, 1.05, 0.1))
 plt.tight_layout()
+plt.savefig('021_simplegrid_calibrated_w1_sopr.png', dpi=300)
 plt.show()
 
 # # # # #
@@ -168,8 +176,8 @@ mw_median_w1_dists = mw_w1_dists.drop('rep', axis=1).groupby(['task', 'test_ind'
 mw_agent_results = mw_agent_results.merge(mw_median_w1_dists, how='inner', on=['task', 'test_ind'])
 
 mw_agent_results = mw_agent_results[mw_agent_results.w1 < 1.2]
-_, bins = pd.qcut(mw_agent_results.w1, q=4, retbins=True)
-mw_spline = fit_spline(x=mw_agent_results.w1, y=mw_agent_results.sopr, bins=bins, k=1)
+_, bins = pd.qcut(mw_agent_results.w1, q=10, retbins=True)
+mw_spline = fit_spline(x=mw_agent_results.w1, y=mw_agent_results.sopr, bins=bins, k=1, s=0.05)
 
 mw_spline_xs = np.linspace(0, max(mw_agent_results.w1), 100)
 mw_spline_ys = mw_spline(mw_spline_xs)
@@ -185,14 +193,15 @@ for ind in range(len(bins) - 1):
     if this_boxplot_data.shape[0] > 0:
         plt.violinplot(this_boxplot_data.sopr, positions=[position], showmedians=True, showextrema=False, widths=0.15, bw_method=2e-2)
 plt.xticks(rotation=-45, ha='left', rotation_mode='anchor')
-plt.xlabel("W1 distance from from base MDP")
+plt.xlabel("W1 distance from base MDP")
 plt.ylabel("SOPR (lower is better)")
 plt.title("SOPR against Wasserstein MDP distance")
 plt.tight_layout()
 plt.plot(mw_spline_xs, mw_spline_ys, color='black')
 plt.show()
 
-_, bins = pd.qcut(mw_agent_results.adj_w1, q=8, retbins=True)
+# _, bins = pd.qcut(mw_agent_results.adj_w1, q=8, retbins=True)
+bins = np.arange(0, 1.05, 0.1)
 for ind in range(len(bins) - 1):
     bin_low = bins[ind]
     bin_high = bins[ind + 1]
@@ -201,7 +210,7 @@ for ind in range(len(bins) - 1):
     position = bin_low + (bin_high - bin_low) / 2
     if this_boxplot_data.shape[0] > 0:
         plt.violinplot(this_boxplot_data.sopr, positions=[position], showmedians=True, showextrema=False, widths=0.05, bw_method=0.125)
-plt.xlabel("W1 distance from from base MDP")
+plt.xlabel("W1 distance from base MDP")
 plt.ylabel("SOPR (lower is better)")
 plt.title("SOPR against Wasserstein MDP distance")
 plt.xticks(ticks = np.arange(0, 1.05, 0.1))

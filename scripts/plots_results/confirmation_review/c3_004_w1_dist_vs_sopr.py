@@ -116,7 +116,7 @@ for ind in range(len(bins) - 1):
     if this_boxplot_data.shape[0] > 0:
         plt.violinplot(this_boxplot_data.sopr, positions=[position], showmedians=True, showextrema=False, widths=0.15, bw_method=2e-2)
 plt.xticks(rotation=-45, ha='left', rotation_mode='anchor')
-plt.xlabel("W1 distance from from base MDP")
+plt.xlabel("W1 distance from base MDP")
 plt.ylabel("SOPR (lower is better)")
 plt.title("SOPR against Wasserstein MDP distance")
 # plt.xticks(ticks = np.arange(0, 2.1, 2/10), rotation=-45, ha='left', rotation_mode='anchor')

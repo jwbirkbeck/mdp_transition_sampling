@@ -2,6 +2,8 @@ import glob, os
 import pandas as pd
 import matplotlib.pyplot as plt
 from src.utils.consts import task_pool_10
+import scipy
+
 
 results_dir = "/opt/project/results/"
 results_path = os.path.join(results_dir, 'random_vs_reward_based_sampling/')
@@ -18,6 +20,8 @@ results = results[results.env_b.isin(task_pool_10)]
 results[['n_states', 'n_transitions']].drop_duplicates()
 
 results = results.query("n_states == 50 and n_transitions == 5")
+# scipy.stats.pearsonr(results.rew_dist, soprs)
+# scipy.stats.pearsonr(random, soprs)
 
 task_sel = results.env_a.unique()
 results = results[results.env_a.isin(task_sel)]
@@ -65,7 +69,8 @@ plt.tight_layout()
 plt.savefig("std_of_schemes.png", dpi=200)
 plt.show()
 
-
 results.groupby(['env_a', 'env_b', 'n_states', 'n_transitions'])[['rand_dist', 'rew_dist']].std().boxplot()
-
 plt.show()
+
+results.groupby(['env_a', 'env_b', 'n_states', 'n_transitions'])[['rand_dist', 'rew_dist']].std().mean()
+results.groupby(['env_a', 'env_b', 'n_states', 'n_transitions'])[['rand_dist', 'rew_dist']].std().std()

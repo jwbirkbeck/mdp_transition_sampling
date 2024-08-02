@@ -22,8 +22,8 @@ n_steps = minmax_epi * 500
 
 results2 = results.query(f"episode <={minmax_epi}")
 # Note that the masking approach does not use cluster size, unlike all other runs
-results2.groupby(['cluster_size','task'])[['lpr_reward', 'wlpr_reward', 'wlpr2_reward', 'mask_reward', 'lpg_reward']].mean()
+results2.groupby(['cluster_size'])[['lpr_reward', 'wlpr_reward', 'wlpr2_reward', 'mask_reward', 'lpg_reward']].mean().transpose()
 
-results2.groupby('cluster_size')[['lpr_reward', 'wlpr_reward', 'wlpr2_reward', 'mask_reward', 'lpg_reward']].std()
+results2.groupby('cluster_size')[['lpr_reward', 'wlpr_reward', 'wlpr2_reward', 'mask_reward', 'lpg_reward']].std().transpose()
 
 results2.groupby('run')['episode'].max().min()

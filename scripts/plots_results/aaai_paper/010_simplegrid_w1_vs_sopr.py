@@ -78,12 +78,11 @@ for seed in range(5000):
 
 soprs = [(max_r - r) / (max_r - min_r) for r, max_r, min_r in zip(evals, max_rs, min_rs)]
 plotdata = pd.DataFrame({'dists': dists, 'evals': evals, 'sopr': soprs, 'min_r': min_rs, 'max_r': max_rs})
-plotdata.min_r[plotdata.evals < plotdata.min_r] = plotdata.evals[plotdata.evals < plotdata.min_r]
-plotdata.max_r[plotdata.evals > plotdata.max_r] = plotdata.evals[plotdata.evals > plotdata.max_r]
+plotdata.loc[plotdata.evals < plotdata.min_r, 'min_r'] = plotdata.loc[plotdata.evals < plotdata.min_r, 'evals']
+plotdata.loc[plotdata.evals > plotdata.max_r, 'max_r'] = plotdata.loc[plotdata.evals > plotdata.max_r, 'evals']
 plotdata.sopr = (plotdata.max_r - plotdata.evals) / (plotdata.max_r - plotdata.min_r)
 
 bins = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
-fig, ax = plt.subplots(figsize=(8 / 1.2, 5 / 1.2))
 bin_vols = []
 for ind in range(len(bins) - 1):
     bin_low = bins[ind]
@@ -98,5 +97,5 @@ plt.ylabel("SOPR (lower is better)")
 plt.title("SimpleGrid: SOPR vs W1 MDP distance")
 plt.xticks(ticks = np.arange(0, 12.5, 1))
 plt.tight_layout()
-plt.savefig("simplegrid_w1_vs_sopr.png", dpi=300)
+plt.savefig("010_simplegrid_w1_vs_sopr.png", dpi=300)
 plt.show()

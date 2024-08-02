@@ -174,7 +174,7 @@ class MetaWorldWrapper(gym.Env):
             self.env.obj_init_pos = self.env.data.body("lock_link").xpos
             self.env._target_pos = self.env.obj_init_pos + np.array([0.1, -0.04, 0.0])
             self.env.goal = self.env._target_pos
-            self.env._set_pos_site('goal', self.env._target_pos)
+            self.env._set_pos_site('goal_unlock', self.env._target_pos)
 
         elif self.task_name in ['handle-press-side-v2']:
             self.env.model.body("box").pos = obj1_xyz
