@@ -113,7 +113,7 @@ plt.show()
 #     position = bin_low + (bin_high - bin_low) / 2
 #     if this_boxplot_data.shape[0] > 0:
 #         plt.violinplot(this_boxplot_data.evals, positions=[position], showmedians=True, showextrema=False, widths=0.75, bw_method=2e-2)
-# plt.xlabel("W1 distance from from base MDP")
+# plt.xlabel("W1 distance from base MDP")
 # plt.ylabel("SOPR (lower is better)")
 # plt.title("SimpleGrid: SOPR vs W1 MDP distance")
 # plt.xticks(ticks = np.arange(0, 11.5, 1))

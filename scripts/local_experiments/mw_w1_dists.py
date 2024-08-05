@@ -42,7 +42,7 @@ def mp_calculate_distances(job_config):
         dist = sampler.get_difference(n_states=50, n_transitions=1)
         pd_row = pd.DataFrame({'task': [task], 'ns_test_ind': [ns_test_ind], 'rep': [rep], 'w1': [dist]})
         w1_dists = pd.concat((w1_dists, pd_row))
-        return w1_dists
+    return w1_dists
 
 
 job_configs = get_job_infos(tasks=task_pool_10, ns_test_inds=ns_test_inds, repeats=5)

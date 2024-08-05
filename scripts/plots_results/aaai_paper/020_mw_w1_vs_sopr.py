@@ -20,8 +20,6 @@ for filename in all_filenames:
     agent_evals = pd.concat((agent_evals, tmp))
 
 agent_evals = agent_evals.rename(columns={'ep_reward': 'reward'})
-# agent_evals.query(f"task=='{task_pool_10[9]}'").groupby(['test_ind'])['reward'].mean().plot()
-# plt.show()
 
 ret_max = agent_evals.rename(columns={'reward': 'ret_max'}).groupby(['task', 'run']).ret_max.max()
 ret_min = agent_evals.rename(columns={'reward': 'ret_min'}).groupby(['task', 'run']).ret_min.min()
@@ -32,15 +30,10 @@ agent_evals = agent_evals.merge(ret_min, how='left', on=['task', 'run'])
 agent_evals['sopr'] = (agent_evals.ret_max - agent_evals.reward) / (agent_evals.ret_max - agent_evals.ret_min)
 
 median_w1_dists = mw_w1_dists.drop('rep', axis=1).groupby(['task', 'test_ind']).median()
-# median_w1_dists_random = mw_w1_dists_random.drop('rep', axis=1).groupby(['task', 'test_ind']).median()
-# median_w1_dists_random = median_w1_dists_random.rename(columns={'w1': 'w1_random'})
 agent_evals = agent_evals.merge(median_w1_dists, how='left', on=['task', 'test_ind'])
-# eval_results_filtered = eval_results_filtered.merge(median_w1_dists_random, how='left', on=['task', 'test_ind'])
 
-# bins = [0.03, 0.15, 0.3, 0.5, 0.7, 0.9, 1.1, 1.3, 1.5, 1.7, 1.9, 2.1]
-plotdata = agent_evals#.query("task=='reach-v2'") # [agent_results.w1 < 1.2]
+plotdata = agent_evals
 _, bins = pd.qcut(plotdata.w1, q=16, retbins=True)
-# bins = [0] + list(bins)
 bin_vols = []
 for ind in range(len(bins) - 1):
     bin_low = bins[ind]
@@ -49,14 +42,14 @@ for ind in range(len(bins) - 1):
     bin_vols.append(this_boxplot_data.shape[0])
     position = bin_low + (bin_high - bin_low) / 2
     if this_boxplot_data.shape[0] > 0:
-        plt.violinplot(this_boxplot_data.sopr, positions=[position], showmedians=True, showextrema=False, widths=0.1, bw_method=2e-2)
+        plt.violinplot(this_boxplot_data.sopr, positions=[position], showmedians=True, showextrema=False, widths=0.075, bw_method=2e-2)
 plt.xticks(rotation=-45, ha='left', rotation_mode='anchor')
 plt.xlabel("W1 distance from base MDP")
 plt.ylabel("SOPR (lower is better)")
-plt.title("SOPR against Wasserstein MDP distance")
+plt.title("SOPR against W1-MDP distance")
 plt.xticks(ticks = np.arange(0, 1.21, 0.1), rotation=-45, ha='left', rotation_mode='anchor')
 plt.tight_layout()
-# plt.savefig("mw_w1_vs_sopr_5_mdps.png", dpi=300)
+plt.savefig("mw_w1_vs_sopr.png", dpi=300)
 plt.show()
 
 # # w1_dists = pd.read_csv('/opt/project/scripts/plots_results/cont_nonstat_w1_vs_returns/w1_dists_new.csv')

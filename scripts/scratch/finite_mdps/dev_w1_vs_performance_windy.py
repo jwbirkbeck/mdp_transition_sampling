@@ -89,7 +89,7 @@ for ind in range(len(bins) - 1):
     if this_boxplot_data.shape[0] > 0:
         plt.violinplot(this_boxplot_data.evals, positions=[position], showmedians=True, showextrema=False, widths=0.15, bw_method=2e-2)
 plt.xticks(rotation=-45, ha='left', rotation_mode='anchor')
-plt.xlabel("W1 distance from from base MDP")
+plt.xlabel("W1 distance from base MDP")
 plt.ylabel("Episode reward")
 plt.title("MDP distance vs agent performance, SimpleGrid")
 plt.xticks(ticks = np.arange(0, 2.1, 2/10), rotation=-45, ha='left', rotation_mode='anchor')

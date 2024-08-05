@@ -31,6 +31,11 @@ with open(os.path.join(project_path_local, 'scripts', 'local_experiments', 'simp
 '{:.2e}'.format(np.std(true_rs - rs))
 '{:.2e}'.format(np.std(true_r - random))
 
+# Context: how many transitions does the full calculation use?
+
+tmp, _ = env.get_all_transitions()
+tmp.shape
+
 import scipy
 scipy.stats.ttest_rel(true_rs - rs, true_r - random)
 
