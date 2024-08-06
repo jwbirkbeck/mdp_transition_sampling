@@ -1,7 +1,6 @@
 #!/bin/bash
-#SBATCH --ntasks=600
-#SBATCH --ntasks-per-node=40
-#SBATCH --nodes=15
+#SBATCH --ntasks=20
+#SBATCH --nodes=1
 #SBATCH -p batch
 #SBATCH --job-name=agent_comparison_long_small
 #SBATCH --time=60:00:00
