@@ -1,20 +1,16 @@
 import torch
 import pickle
-import glob, os, sys
+import os, sys
 import numpy as np
 import pandas as pd
 from src.metaworld.wrapper import MetaWorldWrapper
 from src.utils.consts import task_pool_10
 from src.utils.filepaths import *
 
-# # #
-# Lifetime Policy Reuse, Modified Lifetime Policy Reuse
-# # #
+# Lifetime Policy Reuse, CHIRP policy Reuse, and Bandit CHIRP Policy Reuse
 from src.policy_selector.simple_policy_selector import SimplePolicySelector
 
-# # #
 # Lifelong learning with modulating masks
-# # #
 from src.metaworld.mask_lrl_wrappers import MaskMetaworldWrapper
 from src.mask_lrl.network.network_bodies import DummyBody_CL
 from src.mask_lrl.network.network_bodies import FCBody_SS
@@ -25,45 +21,63 @@ from src.mask_lrl.utils.normalizer import RunningStatsNormalizer
 from src.mask_lrl.utils.normalizer import RewardRunningStatsNormalizer
 from src.mask_lrl.utils.trainer_ll import run_iterations_w_oracle
 
-# # #
 # Lifelong policy gradient learning for faster training without forgetting
-# # #
-import copy
 import gymnasium as gym
-import pickle
-from src.lpg_ftw.mjrl.utils.train_agent import train_agent
 from src.lpg_ftw.mjrl.policies.gaussian_mlp_lpg_ftw import MLPLPGFTW
 from src.lpg_ftw.mjrl.algos.npg_cg_ftw import NPGFTW
 from src.lpg_ftw.mjrl.baselines.mlp_baseline import MLPBaseline
-from src.lpg_ftw.mjrl.utils.gym_env import GymEnv, EnvSpec
-from src.lpg_ftw.mjrl.samplers.base_sampler import do_rollout
-import src.lpg_ftw.mjrl.utils.process_samples as process_samples
+from src.lpg_ftw.mjrl.utils.gym_env import GymEnv
 
 
-"""
-Using the results from agent_comparison.py, select the best cluster sizes for each agent and run a single longer run.
-"""
-
-results_dir = os.path.join(results_path_iridis, 'agent_comparison_long')
-model_dir = os.path.join(model_path_iridis, 'agent_comparison_long')
-assert len(sys.argv) == 2
-assert sys.argv[1].isdigit(), 'python file index argument must be integer value'
-run_index = int(sys.argv[1])
-# From run index, determine which of the 5 agent methods this script will run:
-lpr_mode = cpr_mode = bandit_cpr_mode = mask_lrl_mode = lpg_ftw_mode = False
-if run_index % 5 == 0:
-    lpr_mode = True
-elif run_index % 5 == 1:
-    cpr_mode = True
-elif run_index % 5 == 2:
-    bandit_cpr_mode = True
-elif run_index % 5 == 3:
-    mask_lrl_mode = True
-elif run_index % 5 == 4:
-    lpg_ftw_mode = True
+# assert len(sys.argv) == 2
+# assert sys.argv[1].isdigit(), 'python file index argument must be integer value'
+# run_index = int(sys.argv[1])
+run_index = 48
 
 device = torch.device("cpu")
-n_training_eps = 20000  # high limit that's unlikely to be reached in job time limit
+results_dir = os.path.join(results_path_local, 'agent_comparison_long')
+
+with open(os.path.join(results_dir, 'run_configs.pkl'), 'rb') as file:
+    run_configs = pickle.load(file)
+    run_config = run_configs.iloc[run_index]
+
+with open(os.path.join(results_dir, 'task_sequences.pkl'), 'rb') as file:
+    task_sequences = pickle.load(file)
+    task_sequence = task_sequences['sequence'][run_config['task_sequence_index']]
+
+
+# TODO: remove this limiter!
+task_sequence = task_sequence[0:10]
+
+lpr_cluster_size = 6
+cpr_cluster_size = 8
+bandit_cpr_cluster_size = 6
+mask_cluster_size = 10 # mask_lrl has no equivalent parameter to cluster size - therefore this value is irrelevant
+lpg_cluster_size = 2
+
+lpr_mode = cpr_mode = bandit_cpr_mode = mask_lrl_mode = lpg_ftw_mode = False
+if run_config['agent_index'] == 0:
+    lpr_mode = True
+    cluster_size = lpr_cluster_size
+    agent_name = 'LPR'
+elif run_config['agent_index'] == 1:
+    cpr_mode = True
+    cluster_size = cpr_cluster_size
+    agent_name = 'CPR'
+elif run_config['agent_index'] == 2:
+    bandit_cpr_mode = True
+    cluster_size = bandit_cpr_cluster_size
+    agent_name = 'Bandit CPR'
+elif run_config['agent_index'] == 3:
+    mask_lrl_mode = True
+    cluster_size = mask_cluster_size
+    agent_name = 'Mask-LRL'
+elif run_config['agent_index'] == 4:
+    lpg_ftw_mode = True
+    cluster_size = lpg_cluster_size
+    agent_name = 'LPG-FTW'
+
+base_env = MetaWorldWrapper(task_name=task_pool_10[task_sequence[0]], render_mode=None)  # tasks randomly change during experiment
 
 # # # # #
 # mask-lrl setup
@@ -157,14 +171,6 @@ if lpg_ftw_mode:
 # agent initialisations
 # # # # #
 
-lpr_cluster_size = 6
-cpr_cluster_size = 8
-bandit_cpr_cluster_size = 6
-# mask_lrl_cluster_size is irrelevant, no equivalent parameter
-lpg_cluster_size = 2
-
-base_env = MetaWorldWrapper(task_name=task_pool_10[0], render_mode=None)  # tasks randomly change during experiment
-
 if lpr_mode:
     agent = SimplePolicySelector(env=base_env,
                                  method='bandit',
@@ -186,20 +192,22 @@ elif bandit_cpr_mode:
         bandit_cpr_cluster_info = pickle.load(file)
 
     agent = SimplePolicySelector(env=base_env,
-                                 method='bandit',
-                                 device=device,
-                                 task_policy_mapping=bandit_cpr_cluster_info['mapping'])
+                              method='bandit',
+                              device=device,
+                              task_names=task_pool_10,
+                              n_policies=cluster_size)
+
     for ind, row in enumerate(agent.task_policy_mapping):
         row[bandit_cpr_cluster_info['clusters'][ind]] = 1.0
 
 elif mask_lrl_mode:
     agent = LLAgent(mask_config)
-    mask_config.agent_name = mask_agent.__class__.__name__
-    mask_tasks = mask_agent.config.cl_tasks_info
+    mask_config.agent_name = agent.__class__.__name__
+    mask_tasks = agent.config.cl_tasks_info
     mask_config.cl_num_learn_blocks = 1
 
 elif lpg_ftw_mode:
-    lpg_policy = MLPLPGFTW(lpg_e.spec, hidden_sizes=(32, 32), k=1, max_k=lpg_cluster_size)
+    lpg_policy = MLPLPGFTW(lpg_e[0].spec, hidden_sizes=(32, 32), k=1, max_k=lpg_cluster_size)
     agent = NPGFTW(lpg_e,
                    lpg_policy,
                    lpg_baseline,
@@ -208,72 +216,32 @@ elif lpg_ftw_mode:
                    new_col_mode='max_k')
     agent.set_task(task_id=0)
 
-
 # # # # #
 # experiment
 # # # # #
 
-p_task_change = 0.1
 pd_results = pd.DataFrame()
-curr_task_name = task_pool_10[0]
-curr_task_ind = 0
-for episode_num in range(n_training_eps):
+for episode_ind, task_ind in enumerate(task_sequence):
     # # # #
-    # randomly change task
+    # set task
     # # # #
-    if np.random.uniform() < p_task_change:
-        curr_task_name = np.random.choice(task_pool_10)
-        curr_task_ind = task_pool_10.index(curr_task_name)
-        lpg_agent.set_task(task_id=curr_task_ind)
-        for cluster_ind, _ in enumerate([2, 4, 6, 8, 10]):
-            lpr_agents[cluster_ind].env.change_task(task_name=curr_task_name)
-            wlpr_agents[cluster_ind].env.change_task(task_name=curr_task_name)
-            wlpr2_agents[cluster_ind].env.change_task(task_name=curr_task_name)
-            lpg_agents[cluster_ind].set_task(task_id=curr_task_ind)
+    curr_task_name = task_pool_10[task_ind]
+    base_env.change_task(task_name=curr_task_name)
 
     if lpr_mode or cpr_mode or bandit_cpr_mode:
         ep_rew, _ = agent.play_episode()
     elif mask_lrl_mode:
-        _, ep_rew = run_iterations_w_oracle(agent, [agent.config.cl_tasks_info[curr_task_ind]])
+        _, ep_rew = run_iterations_w_oracle(agent, [agent.config.cl_tasks_info[task_ind]])
+        ep_rew = ep_rew[0]
     elif lpg_ftw_mode:
-        lpg_args = dict(N=1, sample_mode='trajectories', gamma=0.995, gae_lambda=0.97, num_cpu=1,env_name=curr_task_name)
+        lpg_args = dict(N=1, sample_mode='trajectories', gamma=0.995, gae_lambda=0.97, num_cpu=1, env_name=curr_task_name)
         lpg_stats = agent.train_step(**lpg_args)
         ep_rew = lpg_stats[0]
 
-    pd_row = pd.DataFrame({'episode': [episode_num],
+    pd_row = pd.DataFrame({'agent': [agent_name],
+                           'episode': [episode_ind],
+                           'task_ind': [task_ind],
                            'cluster_size': [cluster_size],
-                           'task': [curr_task_name],
                            'reward': [ep_rew]})
-
-    # for cluster_ind, cluster_size in enumerate([2, 4, 6, 8, 10]):
-    #     # # #
-    #     # Lifetime Policy Reuse, Modified Lifetime Policy Reuse
-    #     # # #
-    #     lpr_ep_rew, _ = lpr_agents[cluster_ind].play_episode()
-    #     wlpr_ep_rew, _ = wlpr_agents[cluster_ind].play_episode()
-    #     wlpr2_ep_rew, _ = wlpr2_agents[cluster_ind].play_episode()
-    #
-    #     # # #
-    #     # Lifelong learning with modulating masks
-    #     # # #
-    #     _, mask_ep_rew = run_iterations_w_oracle(mask_agent, [mask_agent.config.cl_tasks_info[curr_task_ind]])
-    #
-    #     # # #
-    #     # Lifelong policy gradient learning for faster training without forgetting
-    #     # # #
-    #
-    #     lpg_args = dict(N=1, sample_mode='trajectories', gamma=0.995, gae_lambda=0.97, num_cpu=1,
-    #                     env_name=curr_task_name)
-    #     lpg_stats = lpg_agents[cluster_ind].train_step(**lpg_args)
-    #
-    #     pd_row = pd.DataFrame({'episode': [episode_num],
-    #                            'cluster_size': [cluster_size],
-    #                            'task': [curr_task_name],
-    #                            'lpr_reward': [lpr_ep_rew],
-    #                            'wlpr_reward': [wlpr_ep_rew],
-    #                            'wlpr2_reward': [wlpr2_ep_rew],
-    #                            'mask_reward': mask_ep_rew,
-    #                            'lpg_reward': [lpg_stats[0]]})
-    #
-    #     pd_results = pd.concat((pd_results, pd_row))
-    #     pd_results.to_csv(os.path.join(results_dir, f'results_{run_index}.csv'), index=False)
+    pd_results = pd.concat((pd_results, pd_row))
+    pd_results.to_csv(os.path.join(results_dir, f'results_{run_index}.csv'), index=False)

@@ -155,7 +155,7 @@ for cluster_ind, cluster_size in enumerate([2, 4, 6, 8, 10]):
         row[cluster_info['clusters'][ind]] = 1.0
     wlpr2_agents.append(wlpr2_agent)
 
-    lpg_policy = MLPLPGFTW(lpg_e[cluster_ind].spec, hidden_sizes=(32, 32), k=1, max_k=cluster_size)
+    lpg_policy = MLPLPGFTW(lpg_e[0].spec, hidden_sizes=(32, 32), k=1, max_k=cluster_size)
     lpg_agent = NPGFTW(lpg_e, lpg_policy, lpg_baseline, normalized_step_size=0.01, save_logs=False,
                        new_col_mode='max_k')
     lpg_agent.set_task(task_id=0)

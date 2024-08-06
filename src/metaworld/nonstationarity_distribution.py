@@ -246,6 +246,7 @@ class TaskNSDist:
             new_task = self.rng.choice(a=self.task_indices[self.task_indices != curr_task_index], size=1).item()
             tasks[prev_ind:ind] = new_task
             prev_ind = ind
+            curr_task_index = new_task
         self.seq = tasks
         self.seq_ind = 0
 
