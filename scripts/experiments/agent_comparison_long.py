@@ -29,13 +29,12 @@ from src.lpg_ftw.mjrl.baselines.mlp_baseline import MLPBaseline
 from src.lpg_ftw.mjrl.utils.gym_env import GymEnv
 
 
-# assert len(sys.argv) == 2
-# assert sys.argv[1].isdigit(), 'python file index argument must be integer value'
-# run_index = int(sys.argv[1])
-run_index = 48
+assert len(sys.argv) == 2
+assert sys.argv[1].isdigit(), 'python file index argument must be integer value'
+run_index = int(sys.argv[1])
 
 device = torch.device("cpu")
-results_dir = os.path.join(results_path_local, 'agent_comparison_long')
+results_dir = os.path.join(results_path_iridis, 'agent_comparison_long')
 
 with open(os.path.join(results_dir, 'run_configs.pkl'), 'rb') as file:
     run_configs = pickle.load(file)
@@ -44,10 +43,6 @@ with open(os.path.join(results_dir, 'run_configs.pkl'), 'rb') as file:
 with open(os.path.join(results_dir, 'task_sequences.pkl'), 'rb') as file:
     task_sequences = pickle.load(file)
     task_sequence = task_sequences['sequence'][run_config['task_sequence_index']]
-
-
-# TODO: remove this limiter!
-task_sequence = task_sequence[0:10]
 
 lpr_cluster_size = 6
 cpr_cluster_size = 8
