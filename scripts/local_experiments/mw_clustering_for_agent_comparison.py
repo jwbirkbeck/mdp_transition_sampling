@@ -5,11 +5,6 @@ from src.utils.consts import task_pool_10
 from src.utils.filepaths import *
 import kmedoids
 import pickle
-from src.utils.filepaths import results_path_iridis
-
-# # #
-# Calculate the task policy mapping
-# # #
 
 distances_path = os.path.join(results_path_local, 'task_transition_sampling/')
 all_filenames = glob.glob(distances_path + "results_[0-9]*.csv")
@@ -28,7 +23,7 @@ dist_matrix = dists2.sort_values(by=['env_a', 'env_b']).groupby(['env_a', 'env_b
 dist_matrix = np.array(dist_matrix).tolist()
 
 for cluster_size in [2, 4, 6, 8, 10]:
-    km = kmedoids.KMedoids(cluster_size, method='fasterpam')
+    km = kmedoids.KMedoids(cluster_size, method='fasterpam', random_state=4)
     c = km.fit(dist_matrix)
     clusters = c.labels_
     mapping = np.array([task_pool_10, clusters], dtype='object').transpose()

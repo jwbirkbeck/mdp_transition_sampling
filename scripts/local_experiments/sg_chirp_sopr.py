@@ -1,5 +1,4 @@
 import torch
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from src.finite_mdps.simple_grid_v2 import SimpleGridV2
@@ -9,15 +8,13 @@ device = torch.device('cpu')
 size = 20
 env = SimpleGridV2(size=size, seed=0, device=device, render_mode='human')
 
-with open('/opt/project/scripts/local_experiments/simplegrid_w1_vs_returns.pkl', 'rb') as file:
-    results_dict = pickle.load(file)
-    dists = results_dict['dists']
-    evals = results_dict['evals']
+np.random.seed(1234)
+torch.manual_seed(4321)
 
 
-def get_optimal_action(env, minimize=False):
+def get_optimal_action(env, goal_pos=None, minimize=False):
     agent_pos = env._agent_pos
-    goal_pos = env._goal_pos
+    goal_pos = env._goal_pos if goal_pos is None else goal_pos
     opt_actions = []
     if not minimize:
         if agent_pos[0] < goal_pos[0]:
@@ -50,12 +47,12 @@ def get_optimal_action(env, minimize=False):
     return np.random.choice(opt_actions)
 
 
-def get_optimal_return(env, minimize=False):
+def get_optimal_return(env, goal_pos=None, minimize=False):
     ep_reward = 0
     env.reset()
     truncated = terminated = False
     while not (truncated or terminated):
-        observation, reward, terminated, truncated, info = env.step(get_optimal_action(env, minimize=minimize))
+        observation, reward, terminated, truncated, info = env.step(get_optimal_action(env, goal_pos=goal_pos, minimize=minimize))
         ep_reward += reward.item()
         optimal_return = ep_reward
     return optimal_return
@@ -65,6 +62,22 @@ def get_max_min_return(env):
     min_return = get_optimal_return(env=env, minimize=True)
     max_return = get_optimal_return(env=env, minimize=False)
     return min_return, max_return
+
+
+def get_sopr(env_a, env_b):
+    opt_b = get_optimal_return(env_b, minimize=False)
+    min_b = get_optimal_return(env_b, minimize=True)
+    a_in_b = get_optimal_return(env_b, goal_pos=env_a._goal_pos, minimize=False)
+    return (opt_b - a_in_b) / (opt_b - min_b)
+
+soprs_analytical = []
+env_a = SimpleGridV2(size=size, seed=0, device=device, render_mode='human')
+env_b = SimpleGridV2(size=size, seed=0, device=device, render_mode='human')
+for seed in range(5000):
+    print(seed)
+    env_b.seed = seed
+    sopr = get_sopr(env_a=env_a, env_b=env_b)
+    soprs_analytical.append(sopr)
 
 
 min_rs = []
@@ -77,10 +90,17 @@ for seed in range(5000):
     max_rs.append(max_r)
 
 soprs = [(max_r - r) / (max_r - min_r) for r, max_r, min_r in zip(evals, max_rs, min_rs)]
-plotdata = pd.DataFrame({'dists': dists, 'evals': evals, 'sopr': soprs, 'min_r': min_rs, 'max_r': max_rs})
+plotdata = pd.DataFrame({'dists': dists, 'evals': evals, 'sopr': soprs, 'soprs_analytical': soprs_analytical, 'min_r': min_rs, 'max_r': max_rs})
 plotdata.loc[plotdata.evals < plotdata.min_r, 'min_r'] = plotdata.loc[plotdata.evals < plotdata.min_r, 'evals']
 plotdata.loc[plotdata.evals > plotdata.max_r, 'max_r'] = plotdata.loc[plotdata.evals > plotdata.max_r, 'evals']
 plotdata.sopr = (plotdata.max_r - plotdata.evals) / (plotdata.max_r - plotdata.min_r)
+
+
+
+plt.scatter(soprs_analytical, soprs)
+plt.show()
+
+
 
 bins = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
 bin_vols = []
@@ -97,5 +117,23 @@ plt.ylabel("SOPR (lower is better)")
 plt.title("SimpleGrid: SOPR vs W1 MDP distance")
 plt.xticks(ticks = np.arange(0, 12.5, 1))
 plt.tight_layout()
-plt.savefig("010_simplegrid_w1_vs_sopr.png", dpi=300)
+# plt.savefig("010_simplegrid_w1_vs_sopr.png", dpi=300)
+plt.show()
+
+
+bin_vols = []
+for ind in range(len(bins) - 1):
+    bin_low = bins[ind]
+    bin_high = bins[ind + 1]
+    this_boxplot_data = plotdata[np.logical_and(plotdata.dists > bin_low, plotdata.dists <= bin_high)]
+    bin_vols.append(this_boxplot_data.shape[0])
+    position = bin_low + (bin_high - bin_low) / 2
+    if this_boxplot_data.shape[0] > 0:
+        plt.violinplot(this_boxplot_data.soprs_analytical, positions=[position], showmedians=True, showextrema=False, widths=0.75, bw_method=0.125)
+plt.xlabel("W1 distance from base MDP")
+plt.ylabel("SOPR (lower is better)")
+plt.title("SimpleGrid: SOPR vs W1 MDP distance")
+plt.xticks(ticks = np.arange(0, 12.5, 1))
+plt.tight_layout()
+# plt.savefig("010_simplegrid_w1_vs_sopr.png", dpi=300)
 plt.show()
