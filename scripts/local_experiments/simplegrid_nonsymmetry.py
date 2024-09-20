@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 import ot
-from src.finite_mdps.simple_grid_v2 import SimpleGridV2
+from src.grid_worlds.simple_grid_v2 import SimpleGridV2
 from src.dqn.dqn_agent import DQNAgent
 import matplotlib.pyplot as plt
 

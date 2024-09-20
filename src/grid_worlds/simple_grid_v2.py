@@ -1,11 +1,12 @@
 import torch
-from src.finite_mdps.torch_helpers import TorchBox
+import numpy as np
+from src.grid_worlds.torch_helpers import TorchBox
 import gymnasium as gym
 import pygame
 
 
 class SimpleGridV2(gym.Env):
-    def __init__(self, size, device, seed=None, render_mode=None, reward_func='manhattan', agent_pos=None, goal_pos=None):
+    def __init__(self, size, device, seed=None, render_mode='human', reward_func='manhattan', agent_pos=None, goal_pos=None):
         super().__init__()
         self.metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 30}
         assert isinstance(size, int) and isinstance(size, int)
@@ -62,9 +63,6 @@ class SimpleGridV2(gym.Env):
 
         self._object_map = {'space': 0, 'agent': 1, 'goal': 2, 'wall': 3}
 
-        self._reset_rng(seed=self.seed)
-        self._initialise()
-
         self.reward_scaling = True
         self.min_reward = self.max_reward = None
         if self.reward_func == 'euclidean':
@@ -75,7 +73,8 @@ class SimpleGridV2(gym.Env):
             self._get_reward = self._get_reward_sparse
         else:
             raise NotImplementedError
-        self._set_reward_scalers()
+        self._reset_rng(seed=self.seed)
+        self._initialise()
 
         self._pygame_window = None
         self._pygame_window_width = None
@@ -142,25 +141,31 @@ class SimpleGridV2(gym.Env):
         if seed is not None:
             self.seed = seed
             torch.manual_seed(seed=self.seed)
+            np.random.seed(seed)
 
     def _initialise(self):
         grid = torch.zeros(size=(self.size, self.size), dtype=torch.float, device=self.device, requires_grad=False)
         self._agent_pos = self._init_agent_pos = self._reset_agent_pos()
         grid[self._agent_pos[0], self._agent_pos[1]] = self._object_map['agent']
         self._goal_pos = self._init_goal_pos = self._reset_goal_pos()
+        while torch.all(self._init_goal_pos == self._init_agent_pos).item():
+            self._goal_pos = self._init_goal_pos = self._reset_goal_pos()
         grid[self._goal_pos[0], self._goal_pos[1]] = self._object_map['goal']
         grid[0, :] = self._object_map['wall']
         grid[-1, :] = self._object_map['wall']
         grid[:, 0] = self._object_map['wall']
         grid[:, -1] = self._object_map['wall']
         self.grid = grid
+        self._set_reward_scalers()
 
     def _reset_agent_pos(self):
         if not self.seeded:
             agent_pos = self._init_agent_pos
         else:
-            pos_x = torch.randint(low=1, high=self.size-1, size=(1, ), dtype=torch.int, device=self.device, requires_grad=False)
-            pos_y = torch.randint(low=1, high=int(self.size/4), size=(1, ), dtype=torch.int, device=self.device, requires_grad=False)
+            # pos_x = torch.randint(low=1, high=self.size-1, size=(1, ), dtype=torch.int, device=self.device, requires_grad=False)
+            # pos_y = torch.randint(low=1, high=int(self.size/4), size=(1, ), dtype=torch.int, device=self.device, requires_grad=False)
+            pos_x = torch.randint(low=1, high=self.size-1, size=(1,), dtype=torch.int, device=self.device, requires_grad=False)
+            pos_y = torch.randint(low=1, high=self.size-1, size=(1,), dtype=torch.int, device=self.device, requires_grad=False)
             agent_pos = torch.tensor([pos_x, pos_y], dtype=torch.int, device=self.device, requires_grad=False)
         return agent_pos
 
@@ -168,8 +173,10 @@ class SimpleGridV2(gym.Env):
         if not self.seeded:
             goal_pos = self._init_goal_pos
         else:
+            # pos_x = torch.randint(low=1, high=self.size - 1, size=(1, ), dtype=torch.int, device=self.device, requires_grad=False)
+            # pos_y = torch.randint(low=int(3 * self.size / 4), high=self.size - 1, size=(1, ), dtype=torch.int, device=self.device, requires_grad=False)
             pos_x = torch.randint(low=1, high=self.size - 1, size=(1, ), dtype=torch.int, device=self.device, requires_grad=False)
-            pos_y = torch.randint(low=int(3 * self.size / 4), high=self.size - 1, size=(1, ), dtype=torch.int, device=self.device, requires_grad=False)
+            pos_y = torch.randint(low=1, high=self.size - 1, size=(1, ), dtype=torch.int, device=self.device, requires_grad=False)
             goal_pos = torch.tensor([pos_x, pos_y], dtype=torch.int, device=self.device, requires_grad=False)
         return goal_pos
 
@@ -193,7 +200,7 @@ class SimpleGridV2(gym.Env):
 
         reward = self._get_reward(agent_pos=new_agent_pos, goal_pos=self._goal_pos)
         if self.reward_scaling:
-            reward = (reward - self.min_reward) / (self.max_reward - self.min_reward) - 1.0
+            reward = (reward - self.min_reward) / (self.max_reward - self.min_reward) - 1
         return next_grid, reward
 
     def _get_obs(self):
@@ -228,18 +235,20 @@ class SimpleGridV2(gym.Env):
         return reward
 
     def _set_reward_scalers(self):
-        min = 999
-        max = -999
-        for pos in [torch.tensor([1., 1.]),
-                    torch.tensor([self.size - 1, 1.]),
-                    torch.tensor([1., self.size - 1.]),
-                    torch.tensor([self.size - 1., self.size - 1.]),
-                    self._goal_pos]:
-            curr_reward = self._get_reward(agent_pos=pos, goal_pos=self._goal_pos)
-            max = curr_reward if curr_reward > max else max
-            min = curr_reward if curr_reward < min else min
-        self.min_reward = min
-        self.max_reward = max
+        # min = 999
+        # max = -999
+        # for pos in [torch.tensor([1., 1.]),
+        #             torch.tensor([self.size - 1, 1.]),
+        #             torch.tensor([1., self.size - 1.]),
+        #             torch.tensor([self.size - 1., self.size - 1.]),
+        #             self._goal_pos]:
+        #     curr_reward = self._get_reward(agent_pos=pos, goal_pos=self._goal_pos)
+        #     max = curr_reward if curr_reward > max else max
+        #     min = curr_reward if curr_reward < min else min
+        # self.min_reward = min
+        # self.max_reward = max
+        self.max_reward = torch.tensor([0.0])
+        self.min_reward = self._get_reward(agent_pos=self._init_agent_pos, goal_pos=self._goal_pos)
 
     def _get_walls(self):
         grid = self.grid
@@ -373,3 +382,48 @@ class SimpleGridV2(gym.Env):
 
     def sample_reward_function(self, n_samples):
         return -1.0 * torch.rand(size=(n_samples, ), requires_grad=False)
+
+    def get_analytical_action(self, alt_goal_pos, minimize):
+        agent_pos = self._agent_pos
+        goal_pos = self._goal_pos if alt_goal_pos is None else alt_goal_pos
+        if minimize:
+            # find furthest corner from current goal and move there instead
+            corners = [torch.tensor(vec, dtype=torch.int, device=self.device, requires_grad=False) for vec in
+            [[1, 1], [self.size-2, 1], [self.size-2, self.size-2],[1, self.size-2]]]
+            corner_rewards = torch.tensor([self._get_reward_manhattan(agent_pos=corner, goal_pos=goal_pos) for corner in corners])
+            lowest_reward_corner = corners[torch.argmin(corner_rewards)]
+            goal_pos = lowest_reward_corner
+
+        opt_actions = []
+        if agent_pos[0] < goal_pos[0]:
+            opt_actions.append(1)
+        if agent_pos[0] > goal_pos[0]:
+            opt_actions.append(3)
+        if agent_pos[1] < goal_pos[1]:
+            opt_actions.append(2)
+        if agent_pos[1] > goal_pos[1]:
+            opt_actions.append(0)
+        if torch.all(agent_pos == goal_pos):
+            # check if we're near an edge. if we are, move into that edge:
+            if agent_pos[0] == 1:
+                opt_actions.append(3)
+            if agent_pos[0] == self.size - 2:
+                opt_actions.append(1)
+            if agent_pos[1] == self.size - 2:
+                opt_actions.append(2)
+        if len(opt_actions) == 0:
+            opt_actions = [0, 1, 2, 3]
+        return np.random.choice(opt_actions)
+
+    def get_analytical_return(self, alt_goal_pos=None, minimize=False, render=False):
+        ep_reward = 0
+        self.reset()
+        truncated = terminated = False
+        while not (truncated or terminated):
+            action = self.get_analytical_action(alt_goal_pos=alt_goal_pos, minimize=minimize)
+            observation, reward, terminated, truncated, info = self.step(action)
+            if render:
+                self.render()
+            ep_reward += reward.item()
+            optimal_return = ep_reward
+        return optimal_return

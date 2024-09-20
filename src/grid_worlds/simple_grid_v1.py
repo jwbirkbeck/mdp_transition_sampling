@@ -1,5 +1,5 @@
 import torch
-from src.finite_mdps.torch_helpers import TorchBox
+from src.grid_worlds.torch_helpers import TorchBox
 import gymnasium as gym
 import pygame
 

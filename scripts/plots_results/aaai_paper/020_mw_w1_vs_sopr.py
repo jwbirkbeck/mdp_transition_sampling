@@ -21,11 +21,11 @@ for filename in all_filenames:
 
 agent_evals = agent_evals.rename(columns={'ep_reward': 'reward'})
 
-ret_max = agent_evals.rename(columns={'reward': 'ret_max'}).groupby(['task', 'run']).ret_max.max()
-ret_min = agent_evals.rename(columns={'reward': 'ret_min'}).groupby(['task', 'run']).ret_min.min()
+ret_max = agent_evals.rename(columns={'reward': 'ret_max'}).groupby(['task']).ret_max.max()
+ret_min = agent_evals.rename(columns={'reward': 'ret_min'}).groupby(['task']).ret_min.min()
 
-agent_evals = agent_evals.merge(ret_max, how='left', on=['task', 'run'])
-agent_evals = agent_evals.merge(ret_min, how='left', on=['task', 'run'])
+agent_evals = agent_evals.merge(ret_max, how='left', on=['task'])
+agent_evals = agent_evals.merge(ret_min, how='left', on=['task'])
 
 agent_evals['sopr'] = (agent_evals.ret_max - agent_evals.reward) / (agent_evals.ret_max - agent_evals.ret_min)
 
@@ -33,7 +33,7 @@ median_w1_dists = mw_w1_dists.drop('rep', axis=1).groupby(['task', 'test_ind']).
 agent_evals = agent_evals.merge(median_w1_dists, how='left', on=['task', 'test_ind'])
 
 plotdata = agent_evals
-_, bins = pd.qcut(plotdata.w1, q=16, retbins=True)
+_, bins = pd.qcut(plotdata.w1, q=15, retbins=True)
 bin_vols = []
 for ind in range(len(bins) - 1):
     bin_low = bins[ind]
@@ -49,7 +49,7 @@ plt.ylabel("SOPR (lower is better)")
 plt.title("SOPR against W1-MDP distance")
 plt.xticks(ticks = np.arange(0, 1.21, 0.1), rotation=-45, ha='left', rotation_mode='anchor')
 plt.tight_layout()
-plt.savefig("mw_w1_vs_sopr.png", dpi=300)
+# plt.savefig("mw_w1_vs_sopr.png", dpi=300)
 plt.show()
 
 # # w1_dists = pd.read_csv('/opt/project/scripts/plots_results/cont_nonstat_w1_vs_returns/w1_dists_new.csv')

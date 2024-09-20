@@ -2,7 +2,7 @@ import torch
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from src.finite_mdps.simple_grid_v2 import SimpleGridV2
+from src.grid_worlds.simple_grid_v2 import SimpleGridV2
 import pickle
 
 device = torch.device('cpu')

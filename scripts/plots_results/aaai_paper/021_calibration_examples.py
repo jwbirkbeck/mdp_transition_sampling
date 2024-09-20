@@ -6,7 +6,7 @@ import pickle
 import sys, os, glob, re
 import matplotlib.pyplot as plt
 from src.utils.filepaths import *
-from src.finite_mdps.simple_grid_v2 import SimpleGridV2
+from src.grid_worlds.simple_grid_v2 import SimpleGridV2
 
 
 def get_optimal_action(env, minimize=False):

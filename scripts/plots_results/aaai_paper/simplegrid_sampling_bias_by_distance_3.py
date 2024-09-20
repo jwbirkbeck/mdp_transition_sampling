@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pickle
 import os
-from src.finite_mdps.simple_grid_v2 import SimpleGridV2
+from src.grid_worlds.simple_grid_v2 import SimpleGridV2
 from src.utils.filepaths import project_path_local
 
 device = torch.device('cpu')

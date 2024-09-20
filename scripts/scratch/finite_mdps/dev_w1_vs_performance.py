@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import ot
-from src.finite_mdps.simple_grid_v1 import SimpleGridV1
+from src.grid_worlds.simple_grid_v1 import SimpleGridV1
 from src.dqn.dqn_agent import DQNAgent
 
 device = torch.device('cpu')

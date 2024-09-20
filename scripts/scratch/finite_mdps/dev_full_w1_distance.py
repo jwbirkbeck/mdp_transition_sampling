@@ -1,6 +1,6 @@
 import torch
 import matplotlib.pyplot as plt
-from src.finite_mdps.simple_grid_v1 import SimpleGridV1
+from src.grid_worlds.simple_grid_v1 import SimpleGridV1
 import numpy as np
 import ot
 

@@ -3,7 +3,6 @@ import torch.nn.functional as funcs
 from torch import nn
 from torch import optim
 from random import randint, uniform
-# from src.soft_actor_critic.memory import SACMemory
 from src.soft_actor_critic.memory_v2 import MemoryV2
 import numpy as np
 
